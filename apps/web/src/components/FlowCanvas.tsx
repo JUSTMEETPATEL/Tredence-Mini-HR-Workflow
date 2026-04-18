@@ -1,148 +1,123 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection,
-  Edge,
-  Node,
   BackgroundVariant,
+  type Node,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 
-import { CustomNode } from './nodes/CustomNode';
+import { useCanvasStore } from '@/stores/canvasStore';
+import { StartNode } from './nodes/StartNode';
+import { TaskNode } from './nodes/TaskNode';
+import { ApprovalNode } from './nodes/ApprovalNode';
+import { AutomatedStepNode } from './nodes/AutomatedStepNode';
+import { EndNode } from './nodes/EndNode';
 
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'custom',
-    data: { label: 'Initialize Data', description: 'Initializing for Automation', nodeType: 'start' },
-    position: { x: 250, y: 50 },
-  },
-  {
-    id: '2',
-    type: 'custom',
-    data: { 
-      label: 'Data Collection', 
-      description: 'Gathering Data Connected', 
-      nodeType: 'task',
-      stats: [11, 27, 41, 72]
-    },
-    position: { x: 100, y: 150 },
-  },
-  {
-    id: '3',
-    type: 'custom',
-    data: { label: 'User Initializing', description: 'Initializing for Automation', nodeType: 'start' },
-    position: { x: 400, y: 50 },
-  },
-  {
-    id: '4',
-    type: 'custom',
-    data: { 
-      label: 'Execute Triggered', 
-      description: 'Workflows on Triggers', 
-      nodeType: 'automated_step',
-    },
-    position: { x: 400, y: 150 },
-  },
-  {
-    id: '5',
-    type: 'custom',
-    data: { 
-      label: 'Setup Automation', 
-      description: 'Triggered Actions', 
-      nodeType: 'approval',
-      stats: [11, 27, 41, 72]
-    },
-    position: { x: 700, y: 150 },
-  },
-  {
-    id: '6',
-    type: 'custom',
-    data: { 
-      label: 'Data Validation', 
-      description: 'Ensuring Data Accuracy', 
-      nodeType: 'task',
-      stats: [91, 18, 20, 21]
-    },
-    position: { x: 400, y: 250 },
-  },
-  {
-    id: '7',
-    type: 'custom',
-    data: { 
-      label: 'Direct Processing', 
-      description: 'Direct Actions', 
-      nodeType: 'start'
-    },
-    position: { x: 50, y: 400 },
-  },
-  {
-    id: '8',
-    type: 'custom',
-    data: { 
-      label: 'Combine Results', 
-      description: '', 
-      nodeType: 'task'
-    },
-    position: { x: 200, y: 350 },
-  },
-  {
-    id: '9',
-    type: 'custom',
-    data: { 
-      label: 'Action Trigger', 
-      description: 'Performing Tasks Conditions', 
-      nodeType: 'task',
-      stats: [87, 34, 17, 18]
-    },
-    position: { x: 400, y: 400 },
-  },
-];
-
-const initialEdges: Edge[] = [
-  { id: 'e1-2', source: '1', target: '2', animated: true, style: { stroke: '#3b82f6' } },
-  { id: 'e1-3', source: '1', target: '3' },
-  { id: 'e2-6', source: '2', target: '6', animated: true },
-  { id: 'e3-4', source: '3', target: '4', animated: true, style: { stroke: '#f59e0b' } },
-  { id: 'e3-5', source: '3', target: '5', animated: true, style: { stroke: '#10b981' } },
-  { id: 'e5-6', source: '5', target: '6', style: { stroke: '#8b5cf6' } },
-  { id: 'e6-9', source: '6', target: '9' },
-  { id: 'e7-10', source: '7', target: '10', animated: true, style: { stroke: '#06b6d4' } },
-  { id: 'e8-9', source: '8', target: '9', style: { stroke: '#8b5cf6' } },
-];
+let nodeIdCounter = 0;
 
 export function FlowCanvas() {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const nodes = useCanvasStore((s) => s.nodes);
+  const edges = useCanvasStore((s) => s.edges);
+  const onNodesChange = useCanvasStore((s) => s.onNodesChange);
+  const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
+  const onConnect = useCanvasStore((s) => s.onConnect);
+  const addNode = useCanvasStore((s) => s.addNode);
+  const selectNode = useCanvasStore((s) => s.selectNode);
+  const deleteSelected = useCanvasStore((s) => s.deleteSelected);
 
-  const onConnect = (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds));
+  const nodeTypes = useMemo(() => ({
+    start: StartNode,
+    task: TaskNode,
+    approval: ApprovalNode,
+    automated_step: AutomatedStepNode,
+    end: EndNode,
+  }), []);
 
-  // use memo to avoid re-rendering
-  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    selectNode(node.id);
+  }, [selectNode]);
+
+  const onPaneClick = useCallback(() => {
+    selectNode(null);
+  }, [selectNode]);
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      deleteSelected();
+    }
+  }, [deleteSelected]);
+
+  // Drop handler for drag-and-drop from sidebar
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('application/reactflow');
+    if (!type) return;
+
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const position = {
+      x: e.clientX - bounds.left - 100,
+      y: e.clientY - bounds.top - 25,
+    };
+
+    const id = `${type}-${Date.now()}-${++nodeIdCounter}`;
+    const defaultData: Record<string, unknown> = {
+      title: `${type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}`,
+    };
+
+    if (type === 'approval') {
+      defaultData.approverRole = 'Manager';
+    }
+    if (type === 'end') {
+      defaultData.endMessage = 'Workflow Complete';
+      defaultData.summaryFlag = false;
+      delete defaultData.title;
+    }
+    if (type === 'automated_step') {
+      defaultData.actionId = '';
+      defaultData.actionParams = {};
+    }
+
+    addNode({ id, type, position, data: defaultData });
+  }, [addNode]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div ref={reactFlowWrapper} className="w-full h-full" onKeyDown={onKeyDown} tabIndex={0}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         nodeTypes={nodeTypes}
         fitView
+        deleteKeyCode={null}
         className="bg-[var(--canvas-bg)]"
       >
-        <Controls />
-        <MiniMap />
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        <Controls position="bottom-left" />
+        <MiniMap
+          position="bottom-right"
+          nodeStrokeWidth={3}
+          pannable
+          zoomable
+          className="!bg-white !border !border-gray-200 !rounded-lg !shadow-sm"
+        />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(0,0,0,0.07)" />
       </ReactFlow>
     </div>
   );

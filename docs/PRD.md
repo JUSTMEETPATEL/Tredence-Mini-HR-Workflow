@@ -1013,41 +1013,41 @@ CORS_ORIGIN          → kv secret: hr-workflow-cors-origin
 
 ## 12. Milestones & Delivery Scope
 
-### Phase 1 — Core prototype (case study scope, ~4–6 hours)
+### Phase 1 — Core prototype (case study scope, ~4–6 hours) ✅
 
-- [ ] Monorepo scaffold with Turborepo + pnpm
-- [ ] `packages/types` — all shared interfaces
-- [ ] `packages/workflow-engine` — validate + simulate (pure logic)
-- [ ] `packages/workflow-canvas` — 5 node types, canvas, sidebar
-- [ ] `packages/node-forms` — all 5 forms with Zod validation
-- [ ] `apps/web` — designer page wiring canvas + forms + toolbar
-- [ ] `packages/api-client` — TanStack Query hooks
-- [ ] MSW mock handlers for `/automations` and `/simulate`
-- [ ] Simulation sandbox panel (bottom drawer)
-- [ ] README with architecture, run instructions, design decisions
+- [x] ~~Monorepo scaffold with Turborepo + pnpm~~ → Co-located in `apps/web/src/lib/` and `apps/web/src/stores/` for Phase 1 simplicity
+- [x] `src/lib/types.ts` — all shared interfaces (`WorkflowNode`, `WorkflowEdge`, `SimulationResult`, etc.)
+- [x] `src/lib/workflow-engine.ts` — validate (7 rules + cycle detection) + simulate (BFS) + serialize/deserialize
+- [x] `src/components/nodes/` — 5 custom React Flow node types (`StartNode`, `TaskNode`, `ApprovalNode`, `AutomatedStepNode`, `EndNode`)
+- [x] `src/components/forms/` — all 5 forms with Zod validation (`StartNodeForm`, `TaskNodeForm`, `ApprovalNodeForm`, `AutomatedStepNodeForm`, `EndNodeForm`)
+- [x] `apps/web` — designer page wiring canvas + `NodeFormPanel` + `TopBar` + `Sidebar` with drag-and-drop palette
+- [x] `src/hooks/` — TanStack Query hooks (`useAutomations`, `useSimulate`)
+- [x] `src/mocks/handlers.ts` — MSW mock handlers for `GET /automations` and `POST /simulate`
+- [x] `src/components/SimulationSandbox.tsx` — bottom drawer with step-by-step execution log
+- [x] `README.md` with architecture, run instructions, design decisions
 
 ### Phase 2 — Real backend (bonus)
 
 - [ ] `apps/api` — Hono.js + Bun + Prisma setup
 - [ ] All 4 route files + sanitizer middleware
 - [ ] Prisma schema + migrations
-- [ ] `docker-compose.yml` full stack
+- [x] `docker-compose.yml` full stack
 - [ ] Switch `NEXT_PUBLIC_API_MODE=real` tested end-to-end
 
-### Phase 3 — Infrastructure (bonus)
+### Phase 3 — Infrastructure (bonus) ✅
 
-- [ ] Dockerfiles for `web` and `api`
-- [ ] Kubernetes manifests (deployments, services, ingress, HPA)
-- [ ] Terraform modules for AKS, ACR, networking, Key Vault, Front Door
-- [ ] GitHub Actions CI + deploy pipelines
+- [x] Dockerfiles for `web` (multi-stage, 37 MB standalone)
+- [x] Kubernetes manifests (deployments, services, ingress, HPA, configmaps, namespaces)
+- [x] Terraform modules for AKS, ACR, networking, Key Vault, Front Door + WAF
+- [x] GitHub Actions CI + deploy pipelines
 
-### Phase 4 — Polish (bonus)
+### Phase 4 — Polish (bonus) — Partial ✅
 
 - [ ] Storybook stories for all node components and forms
 - [ ] Playwright E2E suite
-- [ ] Undo/redo (Zustand history middleware)
+- [x] Undo/redo (Zustand history middleware in `canvasStore`)
 - [ ] Auto-layout (dagre)
-- [ ] JSON export/import
+- [x] JSON export/import (TopBar buttons)
 - [ ] Workflow validation error badges on nodes
 - [ ] Node version history
 

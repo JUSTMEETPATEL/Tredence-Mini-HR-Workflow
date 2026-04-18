@@ -1,7 +1,10 @@
+"use client";
+
 import { FlowCanvas } from "@/components/FlowCanvas";
 import { Sidebar } from "@/components/Sidebar";
-import { RightPanel } from "@/components/RightPanel";
+import { NodeFormPanel } from "@/components/NodeFormPanel";
 import { TopBar } from "@/components/TopBar";
+import { SimulationSandbox } from "@/components/SimulationSandbox";
 
 export default function Page() {
   return (
@@ -12,8 +15,9 @@ export default function Page() {
         <main className="flex-1 h-full w-full relative">
           <FlowCanvas />
         </main>
-        <RightPanel />
+        <NodeFormPanel />
       </div>
+      <SimulationSandbox />
     </div>
   );
 }
