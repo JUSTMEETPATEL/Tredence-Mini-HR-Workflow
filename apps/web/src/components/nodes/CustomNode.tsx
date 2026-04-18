@@ -3,7 +3,14 @@ import { Database, Link, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-export const CustomNode = ({ data, type }: { data: any, type: string }) => {
+export interface CustomNodeData extends Record<string, unknown> {
+  label?: string;
+  description?: string;
+  nodeType?: string;
+  stats?: number[];
+}
+
+export const CustomNode = ({ data, type }: { data: CustomNodeData, type: string }) => {
   const isStart = type === 'start';
   const isEnd = type === 'end';
   

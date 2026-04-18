@@ -1,0 +1,127 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  ACR_REGISTRY: hrworkflowdevacr.azurecr.io
+  AKS_CLUSTER: hrworkflow-dev-aks
+  AKS_RESOURCE_GROUP: hrworkflow-dev-rg
+
+jobs:
+  # ── Lint & Type Check ────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
+
+      - name: Type check
+        working-directory: apps/web
+        run: npx tsc --noEmit
+
+  # ── Build & Push Docker Image ────────────────────────
+  build:
+    name: Build & Push
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR Login
+        run: az acr login --name ${{ env.ACR_REGISTRY }}
+
+      - name: Build & push web image
+        working-directory: apps/web
+        run: |
+          IMAGE=${{ env.ACR_REGISTRY }}/web
+          SHA_TAG=${GITHUB_SHA::8}
+
+          docker build \
+            --tag "$IMAGE:$SHA_TAG" \
+            --tag "$IMAGE:latest" \
+            .
+
+          docker push "$IMAGE:$SHA_TAG"
+          docker push "$IMAGE:latest"
+
+      - name: Save image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+    outputs:
+      image_tag: ${{ env.IMAGE_TAG }}
+
+  # ── Deploy to AKS ───────────────────────────────────
+  deploy:
+    name: Deploy to AKS
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER }}
+
+      - name: Deploy K8s manifests
+        run: |
+          kubectl apply -f infra/k8s/namespaces/
+          kubectl apply -f infra/k8s/configmaps/
+          kubectl apply -f infra/k8s/services/
+          kubectl apply -f infra/k8s/deployments/
+          kubectl apply -f infra/k8s/ingress/
+          kubectl apply -f infra/k8s/hpa/
+
+      - name: Update web image tag
+        run: |
+          kubectl set image deployment/web \
+            web=${{ env.ACR_REGISTRY }}/web:${{ needs.build.outputs.image_tag }} \
+            -n app
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/web -n app --timeout=120s

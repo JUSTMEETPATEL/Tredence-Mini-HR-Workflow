@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sanitizer
+  namespace: ingress
+  labels:
+    app: sanitizer
+    project: hr-workflow-designer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sanitizer
+  template:
+    metadata:
+      labels:
+        app: sanitizer
+    spec:
+      containers:
+        - name: sanitizer
+          image: hrworkflow.azurecr.io/sanitizer:latest
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      imagePullSecrets:
+        - name: acr-secret

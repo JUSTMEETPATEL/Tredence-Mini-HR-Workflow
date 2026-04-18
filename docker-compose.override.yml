@@ -1,0 +1,17 @@
+# Local overrides — mount source for hot reload
+# Usage: docker compose -f docker-compose.yml -f docker-compose.override.yml up
+
+services:
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: deps          # Stop at deps stage — we'll run dev command instead
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./apps/web/src:/app/src:ro
+      - ./apps/web/public:/app/public:ro
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_MODE=mock
+      - HOSTNAME=0.0.0.0

@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, ShieldCheck, Calendar, BarChart2, Link, Server, Workflow, Users, Inbox, MessageSquare, Settings, HelpCircle } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Calendar, BarChart2, Link, Server, Workflow, Settings, HelpCircle } from "lucide-react";
 
 export function Sidebar() {
   return (

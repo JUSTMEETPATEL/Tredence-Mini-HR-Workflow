@@ -1,4 +1,4 @@
-import { Code, TerminalSquare, RotateCcw, RotateCw, Download, FileJson, Play } from "lucide-react";
+import { Code, TerminalSquare, RotateCcw, RotateCw, FileJson, Play } from "lucide-react";
 
 export function TopBar() {
   return (
