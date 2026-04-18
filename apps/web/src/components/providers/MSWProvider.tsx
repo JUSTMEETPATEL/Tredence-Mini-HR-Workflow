@@ -1,12 +1,15 @@
 "use client";
-// ── MSW Provider — initialises mock service worker in dev ──
+// ── MSW Provider — only initialises mock service worker when API_MODE=mock ──
 
 import { useEffect, useState } from 'react';
 
+const API_MODE = process.env.NEXT_PUBLIC_API_MODE || 'mock';
+
 export function MSWProvider({ children }: { children: React.ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(API_MODE !== 'mock');
 
   useEffect(() => {
+    if (API_MODE !== 'mock') return;
     if (typeof window === 'undefined') return;
 
     async function init() {

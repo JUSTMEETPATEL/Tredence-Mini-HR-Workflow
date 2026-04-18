@@ -2,6 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import type { SimulationResult } from '@/lib/types';
+import { apiUrl } from '@/lib/api-config';
 
 interface SimulatePayload {
   nodes: Array<{ id: string; type: string; data: Record<string, unknown> }>;
@@ -11,7 +12,7 @@ interface SimulatePayload {
 export function useSimulate() {
   return useMutation<SimulationResult, Error, SimulatePayload>({
     mutationFn: async (payload) => {
-      const res = await fetch('/api/simulate', {
+      const res = await fetch(apiUrl('/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -26,8 +26,24 @@ apps/web/               ← Next.js 16 (App Router) frontend
       types.ts           ← Shared TypeScript interfaces (PRD §8.2)
       schemas.ts         ← Zod schemas for all 5 node types
       workflow-engine.ts ← Pure logic: validate, simulate, serialize
+      api-config.ts      ← API URL resolver (mock/real mode switch)
     mocks/               ← MSW handlers for /automations and /simulate
     stores/              ← Zustand stores (canvasStore, simulationStore)
+
+apps/api/               ← Hono.js API (Node.js)
+  src/
+    index.ts             ← Entry: cors → logger → sanitizer → routes
+    db.ts                ← Prisma client singleton
+    seed.ts              ← Seeds 5 automations
+    middleware/
+      sanitizer.ts       ← XSS strip, HTML escape, prototype pollution guard
+    routes/
+      health.ts          ← GET /api/health
+      automations.ts     ← GET /api/automations (Prisma reads)
+      simulate.ts        ← POST /api/simulate (validate + BFS + persist)
+      workflows.ts       ← CRUD /api/workflows (create, list, get, delete)
+  prisma/
+    schema.prisma        ← 7 models, 3 enums, cascade deletes
 
 infra/
   nginx/nginx.conf       ← Reverse proxy for local Docker
@@ -61,13 +77,16 @@ docs/
 - Color-coded badges per node type, status icons, timestamps
 
 ### API Layer
-- **MSW** mock handlers intercept `/api/automations` and `/api/simulate`
+- **Hono.js** backend (`apps/api`) with 4 route modules
+- **Sanitizer middleware** — strips HTML, escapes XSS chars, rejects prototype pollution
+- **Prisma ORM** — 7 models, PostgreSQL, seed script for automations
+- **MSW** mock handlers for standalone frontend development
 - **TanStack Query** hooks (`useAutomations`, `useSimulate`) with caching
 - Toggle `NEXT_PUBLIC_API_MODE=mock|real` to switch between MSW and live backend
 
 ### Infrastructure
-- Multi-stage **Dockerfile** (37 MB standalone)
-- **docker-compose.yml** with nginx, web, postgres
+- Multi-stage **Dockerfiles** for web (37 MB) and api
+- **docker-compose.yml** full stack: nginx → web → api → postgres
 - **Kubernetes** manifests with HPA (2→8 pods)
 - **Terraform** modules for Azure (AKS, ACR, VNet, Key Vault, Front Door + WAF)
 - **GitHub Actions** CI/CD pipeline
@@ -77,17 +96,25 @@ docs/
 ## Quick Start
 
 ```bash
-# Install dependencies
+# ── Frontend only (mock mode) ──
 cd apps/web
 npm install
-
-# Run dev server
 npm run dev
-# → http://localhost:3000
+# → http://localhost:3000 (MSW intercepts API calls)
 
-# Production build
-npm run build
-npm start
+# ── Full stack (real mode) ──
+docker compose up --build
+# → http://localhost (nginx) → web:3000 + api:4000 + postgres:5432
+# Then seed the database:
+docker compose exec api npx prisma db push
+docker compose exec api npx tsx src/seed.ts
+
+# ── API only (dev) ──
+cd apps/api
+npm install
+npx prisma generate
+npm run dev
+# → http://localhost:4000/api
 ```
 
 ## Design Decisions
