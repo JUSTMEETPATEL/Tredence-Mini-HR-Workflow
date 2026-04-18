@@ -1041,14 +1041,14 @@ CORS_ORIGIN          → kv secret: hr-workflow-cors-origin
 - [x] Terraform modules for AKS, ACR, networking, Key Vault, Front Door + WAF
 - [x] GitHub Actions CI + deploy pipelines
 
-### Phase 4 — Polish (bonus) — Partial ✅
+### Phase 4 — Polish (bonus) ✅
 
 - [ ] Storybook stories for all node components and forms
-- [ ] Playwright E2E suite
+- [x] Playwright E2E suite (`e2e/app-shell.spec.ts`, `toolbar.spec.ts`, `node-palette.spec.ts` — 15 test cases)
 - [x] Undo/redo (Zustand history middleware in `canvasStore`)
-- [ ] Auto-layout (dagre)
+- [x] Auto-layout (dagre) — `lib/auto-layout.ts` + toolbar button
 - [x] JSON export/import (TopBar buttons)
-- [ ] Workflow validation error badges on nodes
+- [x] Workflow validation error badges on nodes — `NodeValidationBadge.tsx` with pulse animation + hover tooltips
 - [ ] Node version history
 
 ---

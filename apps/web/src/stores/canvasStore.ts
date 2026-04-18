@@ -12,11 +12,21 @@ import {
   applyEdgeChanges,
   addEdge,
 } from '@xyflow/react';
+import { autoLayout } from '@/lib/auto-layout';
+import { validateWorkflow } from '@/lib/workflow-engine';
+import type { WorkflowNode, WorkflowEdge } from '@/lib/types';
+
+export interface ValidationError {
+  nodeId?: string;
+  rule: string;
+  message: string;
+}
 
 export interface CanvasState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
+  validationErrors: ValidationError[];
 
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -27,6 +37,8 @@ export interface CanvasState {
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   selectNode: (nodeId: string | null) => void;
   deleteSelected: () => void;
+  applyAutoLayout: () => void;
+  runValidation: () => ValidationError[];
 
   // History (undo/redo)
   history: { nodes: Node[]; edges: Edge[] }[];
@@ -40,6 +52,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   nodes: [],
   edges: [],
   selectedNodeId: null,
+  validationErrors: [],
   history: [],
   historyIndex: -1,
 
@@ -90,6 +103,39 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
+  // ── Auto-layout (dagre) ───────────────────────
+  applyAutoLayout: () => {
+    const state = get();
+    state.pushHistory();
+    const layouted = autoLayout(state.nodes, state.edges, 'TB');
+    set({ nodes: layouted });
+  },
+
+  // ── Validation ────────────────────────────────
+  runValidation: () => {
+    const { nodes, edges } = get();
+    if (nodes.length === 0) {
+      set({ validationErrors: [] });
+      return [];
+    }
+
+    const wfNodes: WorkflowNode[] = nodes.map((n) => ({
+      id: n.id,
+      type: (n.type || 'task') as WorkflowNode['type'],
+      position: n.position,
+      data: n.data as unknown as WorkflowNode['data'],
+    }));
+    const wfEdges: WorkflowEdge[] = edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+    }));
+
+    const violations = validateWorkflow(wfNodes, wfEdges);
+    set({ validationErrors: violations });
+    return violations;
+  },
+
   // ── History ────────────────────────────────────
   pushHistory: () => {
     const { nodes, edges, history, historyIndex } = get();
@@ -125,3 +171,4 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 }));
+

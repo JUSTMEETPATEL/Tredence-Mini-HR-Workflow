@@ -1,6 +1,6 @@
 "use client";
 
-import { Code, RotateCcw, RotateCw, Play, Upload, Download } from "lucide-react";
+import { Code, RotateCcw, RotateCw, Play, Upload, Download, LayoutGrid, ShieldCheck } from "lucide-react";
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useSimulationStore } from '@/stores/simulationStore';
 import { serializeWorkflow, deserializeWorkflow } from '@/lib/workflow-engine';
@@ -14,6 +14,9 @@ export function TopBar() {
   const setNodes = useCanvasStore((s) => s.setNodes);
   const setEdges = useCanvasStore((s) => s.setEdges);
   const toggleSandbox = useSimulationStore((s) => s.toggle);
+  const applyAutoLayout = useCanvasStore((s) => s.applyAutoLayout);
+  const runValidation = useCanvasStore((s) => s.runValidation);
+  const validationErrors = useCanvasStore((s) => s.validationErrors);
 
   const handleExport = () => {
     const wfNodes: WorkflowNode[] = nodes.map((n) => ({
@@ -94,6 +97,16 @@ export function TopBar() {
         </button>
         <button onClick={handleExport} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Export JSON">
           <Download size={15} />
+        </button>
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <button onClick={applyAutoLayout} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Auto-layout (dagre)">
+          <LayoutGrid size={15} />
+        </button>
+        <button onClick={() => runValidation()} className={`relative p-1.5 rounded transition-colors cursor-pointer ${validationErrors.length > 0 ? 'text-red-500 hover:bg-red-50' : 'text-[var(--text-secondary)] hover:text-black hover:bg-gray-100'}`} title="Validate workflow">
+          <ShieldCheck size={15} />
+          {validationErrors.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">{validationErrors.length}</span>
+          )}
         </button>
         <div className="w-px h-5 bg-gray-200 mx-1" />
         <button onClick={toggleSandbox} className="flex items-center gap-1.5 text-xs font-medium bg-[var(--color-brand-600)] text-white px-3 py-1.5 rounded-md hover:bg-[var(--color-brand-500)] transition-colors cursor-pointer">
