@@ -13,6 +13,8 @@ services:
     depends_on:
       web:
         condition: service_started
+      api:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost/nginx-health"]
@@ -29,11 +31,37 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_MODE=mock
+      - NEXT_PUBLIC_API_MODE=real
+      - NEXT_PUBLIC_API_BASE_URL=http://api:4000
       - HOSTNAME=0.0.0.0
+    depends_on:
+      api:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Hono.js API ──────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=postgresql://hrflow:hrflow_dev@postgres:5432/hr_workflow
+      - CORS_ORIGIN=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -59,3 +87,4 @@ services:
 volumes:
   pgdata:
     driver: local
+

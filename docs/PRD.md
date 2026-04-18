@@ -1026,13 +1026,13 @@ CORS_ORIGIN          → kv secret: hr-workflow-cors-origin
 - [x] `src/components/SimulationSandbox.tsx` — bottom drawer with step-by-step execution log
 - [x] `README.md` with architecture, run instructions, design decisions
 
-### Phase 2 — Real backend (bonus)
+### Phase 2 — Real backend (bonus) ✅
 
-- [ ] `apps/api` — Hono.js + Bun + Prisma setup
-- [ ] All 4 route files + sanitizer middleware
-- [ ] Prisma schema + migrations
-- [x] `docker-compose.yml` full stack
-- [ ] Switch `NEXT_PUBLIC_API_MODE=real` tested end-to-end
+- [x] `apps/api` — Hono.js + Node.js + Prisma 6 setup (entry: `src/index.ts`, 4 route modules)
+- [x] All 4 route files (`health.ts`, `automations.ts`, `simulate.ts`, `workflows.ts`) + `middleware/sanitizer.ts`
+- [x] Prisma schema (`prisma/schema.prisma`) — 7 models, 3 enums, cascade deletes, indexes + seed script
+- [x] `docker-compose.yml` full stack (nginx → web → api → postgres, health checks)
+- [x] `NEXT_PUBLIC_API_MODE=real` wiring — `api-config.ts` + conditional MSW via `MSWProvider`
 
 ### Phase 3 — Infrastructure (bonus) ✅
 
