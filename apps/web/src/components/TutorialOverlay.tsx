@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { X, MousePointer2 } from "lucide-react";
 import { useCanvasStore } from "@/stores/canvasStore";
 
@@ -192,18 +192,18 @@ function TutorialDialog({ step, demoPlaying, onNext, onSkip }: { step: number, d
       style={{ top: pos.top, left: pos.left }}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-bold text-[var(--color-brand-600)] text-sm">{title}</h3>
+        <h3 className="font-bold text-[var(--color-brand-500)] text-sm">{title}</h3>
         <button onClick={onSkip} className="text-gray-400 hover:text-gray-600" title="Skip Tutorial"><X size={16} /></button>
       </div>
       <p className="text-sm text-[var(--text-secondary)] mb-4">{text}</p>
       {step !== 8 ? (
         <div className="flex justify-end gap-2">
           <button onClick={onSkip} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">Skip</button>
-          <button onClick={onNext} className="px-3 py-1.5 text-xs bg-[var(--color-brand-600)] text-white rounded-md hover:bg-[var(--color-brand-700)] shadow-sm">Next</button>
+          <button onClick={onNext} className="px-3 py-1.5 text-xs bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] transition-colors shadow-sm cursor-pointer">Next</button>
         </div>
       ) : (
         <div className="flex justify-end gap-2">
-          <button onClick={onSkip} className="px-3 py-1.5 text-xs bg-[var(--color-brand-600)] text-white rounded-md hover:bg-[var(--color-brand-700)] shadow-sm">Got it</button>
+          <button onClick={onSkip} className="px-3 py-1.5 text-xs bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] transition-colors shadow-sm cursor-pointer">Got it</button>
         </div>
       )}
     </div>

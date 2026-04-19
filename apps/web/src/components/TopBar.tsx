@@ -112,10 +112,8 @@ export function TopBar() {
       <header className="h-[var(--toolbar-height)] border-b border-[var(--border-default)] bg-[var(--surface-primary)] flex items-center justify-between px-5 z-10 shadow-sm shrink-0">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="bg-[var(--color-brand-600)] text-white p-1.5 rounded-md">
-            <Code size={16} />
-          </div>
-          <span className="font-semibold text-[15px] text-[var(--text-primary)]">CodeAuto</span>
+          <img src="/logo.png" alt="FlowForge Logo" className="w-7 h-7 object-contain rounded-md bg-white shadow-sm" />
+          <span className="font-semibold text-[16px] font-heading text-[var(--color-brand-600)]">FlowForge</span>
         </div>
 
         {/* Title — shows current workflow name */}
@@ -172,7 +170,7 @@ export function TopBar() {
           <div className="w-px h-5 bg-gray-200 mx-1" />
 
           {/* Simulate */}
-          <button onClick={toggleSandbox} data-tutorial="tutorial-simulate-btn" className="flex items-center gap-1.5 text-xs font-medium bg-[var(--color-brand-600)] text-white px-3 py-1.5 rounded-md hover:bg-[var(--color-brand-500)] transition-colors cursor-pointer">
+          <button onClick={toggleSandbox} data-tutorial="tutorial-simulate-btn" className="flex items-center gap-1.5 text-xs font-medium bg-[var(--color-brand-500)] text-white px-3 py-1.5 rounded-md hover:bg-[var(--color-brand-600)] transition-all shadow-sm hover:shadow cursor-pointer">
             <Play size={13} fill="currentColor" />
             Simulate
           </button>
@@ -215,7 +213,7 @@ export function TopBar() {
               <button
                 onClick={handleSaveSubmit}
                 disabled={!saveName.trim()}
-                className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-600)] text-white rounded-md hover:bg-[var(--color-brand-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
               >
                 Save
               </button>

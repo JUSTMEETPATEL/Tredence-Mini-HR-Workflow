@@ -73,8 +73,8 @@ async function tryModel(model: string, apiKey: string, messages: {role: string; 
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://codeauto-hr.app',
-      'X-Title': 'CodeAuto HR Workflow Designer',
+      'HTTP-Referer': 'https://flowforge-hr.app',
+      'X-Title': 'FlowForge HR Workflow Designer',
     },
     body: JSON.stringify({
       model,

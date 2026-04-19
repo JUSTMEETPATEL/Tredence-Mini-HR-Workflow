@@ -41,7 +41,7 @@ export function AiWorkflowBuilder() {
       {/* Floating AI Button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all duration-200 cursor-pointer group"
+        className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-orange-600 to-pink-600 text-white text-sm font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transition-all duration-200 cursor-pointer group"
         title="AI Workflow Builder"
       >
         <Sparkles size={18} className="group-hover:animate-pulse" />
@@ -152,11 +152,8 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-indigo-50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-pink-50">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-md">
-              <Sparkles size={18} />
-            </div>
             <div>
               <h2 className="text-sm font-bold text-[var(--text-primary)]">AI Workflow Builder</h2>
               <p className="text-[11px] text-gray-400">Describe your workflow, I will build it for you</p>
@@ -172,9 +169,6 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
           {/* Welcome state */}
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 mb-4">
-                <Wand2 size={32} className="text-violet-500" />
-              </div>
               <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">What workflow would you like to build?</h3>
               <p className="text-xs text-gray-400 max-w-sm mb-6">Describe your HR process in plain English. I will ask follow-up questions if needed, then generate the complete workflow.</p>
               
@@ -189,10 +183,10 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
                   <button
                     key={suggestion}
                     onClick={() => sendMessage(suggestion)}
-                    className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 text-xs text-[var(--text-secondary)] hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 transition-all group flex items-center justify-between"
+                    className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 text-xs text-[var(--text-secondary)] hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all group flex items-center justify-between"
                   >
                     <span>{suggestion}</span>
-                    <ChevronRight size={14} className="text-gray-300 group-hover:text-violet-500 transition-colors" />
+                    <ChevronRight size={14} className="text-gray-300 group-hover:text-orange-500 transition-colors" />
                   </button>
                 ))}
               </div>
@@ -217,11 +211,8 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
           {/* Loading indicator */}
           {loading && (
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white shrink-0 mt-0.5">
-                <Sparkles size={14} />
-              </div>
               <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-                <Loader2 size={14} className="animate-spin text-violet-500" />
+                <Loader2 size={14} className="animate-spin text-orange-500" />
                 <span className="text-xs text-gray-500">Thinking...</span>
               </div>
             </div>
@@ -240,12 +231,12 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
               onChange={e => setInput(e.target.value)}
               placeholder="Describe a workflow..."
               disabled={loading}
-              className="flex-1 text-sm border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:opacity-50 bg-white"
+              className="flex-1 text-sm border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50 bg-white"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="p-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white disabled:opacity-40 hover:shadow-md transition-all disabled:cursor-not-allowed cursor-pointer"
+              className="p-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-pink-600 text-white disabled:opacity-40 hover:shadow-md transition-all disabled:cursor-not-allowed cursor-pointer"
             >
               <Send size={16} />
             </button>
@@ -260,7 +251,7 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <div className="bg-gradient-to-r from-violet-500 to-indigo-500 text-white px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm">
+      <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm">
         <p className="text-sm">{text}</p>
       </div>
     </div>
@@ -323,9 +314,6 @@ function AssistantBubble({
 
   return (
     <div className="flex items-start gap-3">
-      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white shrink-0 mt-0.5">
-        <Sparkles size={14} />
-      </div>
       <div className="flex-1 min-w-0 space-y-3">
         {/* Text */}
         <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 inline-block max-w-[95%]">
@@ -356,7 +344,7 @@ function AssistantBubble({
                 <button
                   onClick={handleSubmitAll}
                   disabled={!allAnswered}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-md transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-orange-600 to-pink-600 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-md transition-all cursor-pointer"
                 >
                   <Send size={13} />
                   Submit All Answers
@@ -399,9 +387,9 @@ function McqCard({
   const isAnswered = selected && (!isCustomSelected || customText.trim());
 
   return (
-    <div className={`border rounded-xl p-4 transition-all ${submitted ? 'border-emerald-200 bg-emerald-50/50' : isAnswered ? 'border-violet-300 bg-violet-50/40' : 'border-gray-200 bg-white'}`}>
+    <div className={`border rounded-xl p-4 transition-all ${submitted ? 'border-emerald-200 bg-emerald-50/50' : isAnswered ? 'border-orange-300 bg-orange-50/40' : 'border-gray-200 bg-white'}`}>
       <p className="text-xs font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-        <MessageSquare size={13} className="text-violet-500" />
+        <MessageSquare size={13} className="text-orange-500" />
         {question.text}
       </p>
       <div className="grid grid-cols-2 gap-2">
@@ -413,15 +401,15 @@ function McqCard({
             className={`
               text-left px-3 py-2.5 rounded-lg text-xs border transition-all
               ${selected === opt.value
-                ? 'border-violet-500 bg-violet-100 text-violet-700 font-medium shadow-sm'
+                ? 'border-orange-500 bg-orange-100 text-orange-700 font-medium shadow-sm'
                 : submitted
                   ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
-                  : 'border-gray-200 bg-white text-[var(--text-secondary)] hover:border-violet-300 hover:bg-violet-50 cursor-pointer'
+                  : 'border-gray-200 bg-white text-[var(--text-secondary)] hover:border-orange-300 hover:bg-orange-50 cursor-pointer'
               }
               flex items-center gap-2
             `}
           >
-            <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === opt.value ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
+            <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === opt.value ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
               {selected === opt.value && <CheckCircle2 size={10} className="text-white" />}
             </span>
             {opt.label}
@@ -436,7 +424,7 @@ function McqCard({
             value={customText}
             onChange={e => onCustomText(e.target.value)}
             placeholder="Type your answer..."
-            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             autoFocus
           />
         </div>
@@ -448,15 +436,16 @@ function McqCard({
 /* ── Workflow Preview Card ───────────────────── */
 function WorkflowPreviewCard({ workflow, onApply }: { workflow: { name: string; nodes: Node[]; edges: Edge[] }; onApply: () => void }) {
   const nodeTypes = workflow.nodes.reduce((acc: Record<string, number>, n: Node) => {
-    acc[n.type] = (acc[n.type] || 0) + 1;
+    const type = n.type || 'task';
+    acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
 
   const typeColors: Record<string, string> = {
-    start: 'bg-emerald-100 text-emerald-700',
-    task: 'bg-blue-100 text-blue-700',
-    approval: 'bg-amber-100 text-amber-700',
-    automated_step: 'bg-purple-100 text-purple-700',
+    start: 'bg-blue-100 text-blue-700',
+    task: 'bg-orange-100 text-orange-700',
+    approval: 'bg-orange-100 text-orange-700',
+    automated_step: 'bg-pink-100 text-pink-700',
     end: 'bg-red-100 text-red-700',
   };
 
@@ -482,17 +471,20 @@ function WorkflowPreviewCard({ workflow, onApply }: { workflow: { name: string; 
       {/* Node list preview */}
       <div className="bg-white/60 rounded-lg p-3 mb-4 max-h-36 overflow-y-auto">
         <div className="space-y-1.5">
-          {workflow.nodes.map((n: Node, i: number) => (
-            <div key={n.id} className="flex items-center gap-2 text-[11px]">
-              <span className="text-gray-300 w-4 text-right">{i + 1}.</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                n.type === 'start' ? 'bg-emerald-500' : n.type === 'end' ? 'bg-red-500' : n.type === 'task' ? 'bg-blue-500' : n.type === 'approval' ? 'bg-amber-500' : 'bg-purple-500'
-              }`} />
-              <span className="text-gray-600 capitalize font-medium">{n.type.replace('_', ' ')}</span>
-              <span className="text-gray-400">—</span>
-              <span className="text-gray-700 truncate">{n.data?.title || 'Untitled'}</span>
-            </div>
-          ))}
+          {workflow.nodes.map((n: Node, i: number) => {
+            const type = n.type || 'task';
+            return (
+              <div key={n.id} className="flex items-center gap-2 text-[11px]">
+                <span className="text-gray-300 w-4 text-right">{i + 1}.</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  type === 'start' ? 'bg-blue-500' : type === 'end' ? 'bg-red-500' : type === 'task' ? 'bg-orange-500' : type === 'approval' ? 'bg-orange-500' : 'bg-pink-500'
+                }`} />
+                <span className="text-gray-600 capitalize font-medium">{type.replace('_', ' ')}</span>
+                <span className="text-gray-400">—</span>
+                <span className="text-gray-700 truncate">{String(n.data?.title || 'Untitled')}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

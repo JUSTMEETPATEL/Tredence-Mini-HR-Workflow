@@ -95,7 +95,7 @@ function SaveWorkflowModal({ mode, onClose }: { mode: 'save' | 'new'; onClose: (
           <button 
             onClick={handleSubmit} 
             disabled={!name.trim()}
-            className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-600)] text-white rounded-md hover:bg-[var(--color-brand-700)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+            className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
           >
             {mode === 'save' ? 'Save' : (nodes.length > 0 ? 'Save & Create New' : 'Create')}
           </button>
@@ -169,7 +169,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="flex justify-end p-4 border-t border-gray-100 bg-gray-50/50">
-          <button onClick={onClose} className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-600)] text-white rounded-md hover:bg-[var(--color-brand-700)] transition-colors shadow-sm">Done</button>
+          <button onClick={onClose} className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] transition-all shadow-sm hover:shadow">Done</button>
         </div>
       </div>
     </div>
@@ -196,25 +196,25 @@ export function Sidebar() {
             <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">General</p>
             <ul className="space-y-0.5">
               <li>
-                <button onClick={() => setActiveNav('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer text-left ${activeNav === 'dashboard' ? 'font-medium text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--text-secondary)] hover:bg-gray-50'}`}>
-                  <LayoutDashboard size={16} />
+                <button onClick={() => setActiveNav('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer transition-all text-left ${activeNav === 'dashboard' ? 'font-medium text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border-l-2 border-[var(--color-brand-500)]' : 'border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-gray-50'}`}>
+                  <LayoutDashboard size={16} className={activeNav === 'dashboard' ? 'text-[var(--color-brand-500)]' : 'text-gray-400'} />
                   Dashboard
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveNav('compliance')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer text-left ${activeNav === 'compliance' ? 'font-medium text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--text-secondary)] hover:bg-gray-50'}`}>
-                  <ShieldCheck size={16} />Compliance
+                <button onClick={() => setActiveNav('compliance')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer transition-all text-left ${activeNav === 'compliance' ? 'font-medium text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border-l-2 border-[var(--color-brand-500)]' : 'border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-gray-50'}`}>
+                  <ShieldCheck size={16} className={activeNav === 'compliance' ? 'text-[var(--color-brand-500)]' : 'text-gray-400'} />Compliance
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveNav('scheduler')} className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer ${activeNav === 'scheduler' ? 'font-medium text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--text-secondary)] hover:bg-gray-50'}`}>
-                  <span className="flex items-center gap-3"><Calendar size={16} />Scheduler</span>
+                <button onClick={() => setActiveNav('scheduler')} className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer transition-all ${activeNav === 'scheduler' ? 'font-medium text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border-l-2 border-[var(--color-brand-500)]' : 'border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-gray-50'}`}>
+                  <span className="flex items-center gap-3"><Calendar size={16} className={activeNav === 'scheduler' ? 'text-[var(--color-brand-500)]' : 'text-gray-400'} />Scheduler</span>
                   <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{savedWorkflows.length}</span>
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveNav('analytics')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer text-left ${activeNav === 'analytics' ? 'font-medium text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--text-secondary)] hover:bg-gray-50'}`}>
-                  <BarChart2 size={16} />Analytics
+                <button onClick={() => setActiveNav('analytics')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer transition-all text-left ${activeNav === 'analytics' ? 'font-medium text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border-l-2 border-[var(--color-brand-500)]' : 'border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-gray-50'}`}>
+                  <BarChart2 size={16} className={activeNav === 'analytics' ? 'text-[var(--color-brand-500)]' : 'text-gray-400'} />Analytics
                 </button>
               </li>
             </ul>
@@ -224,13 +224,13 @@ export function Sidebar() {
             <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">Automation</p>
             <ul className="space-y-0.5">
               <li>
-                <button onClick={() => setActiveNav('integrations')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer text-left ${activeNav === 'integrations' ? 'font-medium text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--text-secondary)] hover:bg-gray-50'}`}>
-                  <Link size={16} />Integrations
+                <button onClick={() => setActiveNav('integrations')} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md cursor-pointer transition-all text-left ${activeNav === 'integrations' ? 'font-medium text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border-l-2 border-[var(--color-brand-500)]' : 'border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-gray-50'}`}>
+                  <Link size={16} className={activeNav === 'integrations' ? 'text-[var(--color-brand-500)]' : 'text-gray-400'} />Integrations
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveNav('repository')} className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer ${activeNav === 'repository' ? 'font-medium text-[var(--color-brand-600)] bg-[var(--color-brand-50)]' : 'text-[var(--text-secondary)] hover:bg-gray-50'}`}>
-                  <span className="flex items-center gap-3"><Server size={16} />Repository</span>
+                <button onClick={() => setActiveNav('repository')} className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer transition-all ${activeNav === 'repository' ? 'font-medium text-[var(--color-brand-500)] bg-[var(--color-brand-50)] border-l-2 border-[var(--color-brand-500)]' : 'border-l-2 border-transparent text-[var(--text-secondary)] hover:bg-gray-50'}`}>
+                  <span className="flex items-center gap-3"><Server size={16} className={activeNav === 'repository' ? 'text-[var(--color-brand-500)]' : 'text-gray-400'} />Repository</span>
                   <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{DEMO_WORKFLOWS.length}</span>
                 </button>
               </li>
@@ -244,14 +244,14 @@ export function Sidebar() {
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => setModal('save')}
-                  className="text-gray-400 hover:text-[var(--color-brand-600)] transition-colors p-1 rounded hover:bg-gray-100"
+                  className="text-gray-400 hover:text-[var(--color-brand-500)] transition-colors p-1 rounded hover:bg-[var(--color-brand-50)]"
                   title="Save Current Workflow"
                 >
                   <Save size={13} />
                 </button>
                 <button
                   onClick={() => setModal('new')}
-                  className="text-gray-400 hover:text-[var(--color-brand-600)] transition-colors p-1 rounded hover:bg-gray-100"
+                  className="text-gray-400 hover:text-[var(--color-brand-500)] transition-colors p-1 rounded hover:bg-[var(--color-brand-50)]"
                   title="New Workflow"
                 >
                   <Plus size={13} />

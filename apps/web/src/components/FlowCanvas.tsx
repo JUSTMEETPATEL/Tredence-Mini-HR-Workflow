@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -8,6 +8,7 @@ import {
   Background,
   BackgroundVariant,
   type Node,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 
 import { useCanvasStore } from '@/stores/canvasStore';
@@ -20,6 +21,7 @@ import { EndNode } from './nodes/EndNode';
 let nodeIdCounter = 0;
 
 export function FlowCanvas() {
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
@@ -41,6 +43,26 @@ export function FlowCanvas() {
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     selectNode(node.id);
   }, [selectNode]);
+
+  const onMiniMapNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    if (reactFlowInstance) {
+      // Offset by roughly half the node width/height so it actually centers
+      reactFlowInstance.setCenter(node.position.x + 100, node.position.y + 40, { duration: 800, zoom: 1.2 });
+      selectNode(node.id);
+    }
+  }, [reactFlowInstance, selectNode]);
+
+  const nodeColor = (node: Node) => {
+    switch (node.type) {
+      case 'start': return '#3B82F6';
+      case 'task': return '#F97316';
+      case 'approval': return '#8B5CF6';
+      case 'automated_step': return '#EC4899';
+      case 'end': return '#EF4444';
+      default: return '#E4E4E7';
+    }
+  };
 
   const onPaneClick = useCallback(() => {
     selectNode(null);
@@ -97,6 +119,8 @@ export function FlowCanvas() {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        onInit={setReactFlowInstance}
+        defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -113,6 +137,8 @@ export function FlowCanvas() {
         <MiniMap
           position="bottom-right"
           nodeStrokeWidth={3}
+          nodeColor={nodeColor}
+          onNodeClick={onMiniMapNodeClick}
           pannable
           zoomable
           className="!bg-white !border !border-gray-200 !rounded-lg !shadow-sm"

@@ -100,7 +100,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     onConnect: (connection) => {
       const state = get();
       state.pushHistory();
-      set({ edges: addEdge(connection, state.edges) });
+      set({ edges: addEdge({ ...connection, type: 'smoothstep', animated: true }, state.edges) });
     },
 
     addNode: (node) => {
