@@ -28,7 +28,6 @@ export function ComplianceView() {
     <div className="flex-1 overflow-y-auto bg-gray-50/50">
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600"><ShieldCheck size={22} /></div>
           <div>
             <h1 className="text-xl font-bold text-[var(--text-primary)]">Compliance Dashboard</h1>
             <p className="text-sm text-[var(--text-tertiary)]">Audit your workflows against HR policy rules</p>
@@ -111,7 +110,6 @@ export function SchedulerView() {
     <div className="flex-1 overflow-y-auto bg-gray-50/50">
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600"><Calendar size={22} /></div>
           <div>
             <h1 className="text-xl font-bold text-[var(--text-primary)]">Workflow Scheduler</h1>
             <p className="text-sm text-[var(--text-tertiary)]">Automate workflow execution on a schedule</p>
@@ -163,7 +161,7 @@ export function SchedulerView() {
           </div>
         </div>
 
-        <p className="text-xs text-center text-gray-400 mt-6">Build a workflow in the <button onClick={() => setActiveView('dashboard')} className="text-[var(--color-brand-600)] hover:underline font-medium">Dashboard</button> to schedule it here.</p>
+        <p className="text-xs text-center text-gray-400 mt-6">Build a workflow in the <button onClick={() => setActiveView('dashboard')} className="text-[var(--color-brand-500)] hover:text-[var(--color-brand-600)] hover:underline font-medium">Dashboard</button> to schedule it here.</p>
       </div>
     </div>
   );
@@ -197,7 +195,6 @@ export function AnalyticsView() {
     <div className="flex-1 overflow-y-auto bg-gray-50/50">
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-violet-100 text-violet-600"><BarChart2 size={22} /></div>
           <div>
             <h1 className="text-xl font-bold text-[var(--text-primary)]">Analytics</h1>
             <p className="text-sm text-[var(--text-tertiary)]">Workflow usage metrics and insights</p>
@@ -264,23 +261,22 @@ export function AnalyticsView() {
    ──────────────────────────────────────────────────────── */
 export function IntegrationsView() {
   const integrations = [
-    { name: 'Slack', desc: 'Send notifications and approvals via Slack channels', icon: '💬', connected: true },
-    { name: 'Microsoft Teams', desc: 'Push workflow updates to Teams channels', icon: '🟦', connected: false },
-    { name: 'Gmail / SMTP', desc: 'Send automated email notifications', icon: '📧', connected: true },
-    { name: 'Jira', desc: 'Create and track issues from workflow tasks', icon: '🔵', connected: false },
-    { name: 'SAP SuccessFactors', desc: 'Sync employee data with HR system', icon: '🏢', connected: true },
-    { name: 'Workday', desc: 'Import org charts and employee records', icon: '📊', connected: false },
-    { name: 'DocuSign', desc: 'Request e-signatures within approval flows', icon: '✍️', connected: false },
-    { name: 'Google Sheets', desc: 'Log workflow outcomes to spreadsheets', icon: '📗', connected: true },
-    { name: 'Webhooks', desc: 'Send and receive custom HTTP webhook calls', icon: '🔗', connected: true },
-    { name: 'PostgreSQL', desc: 'Read/write data from internal databases', icon: '🐘', connected: true },
+    { name: 'Slack', desc: 'Send notifications and approvals via Slack channels', connected: true },
+    { name: 'Microsoft Teams', desc: 'Push workflow updates to Teams channels', connected: false },
+    { name: 'Gmail / SMTP', desc: 'Send automated email notifications', connected: true },
+    { name: 'Jira', desc: 'Create and track issues from workflow tasks', connected: false },
+    { name: 'SAP SuccessFactors', desc: 'Sync employee data with HR system', connected: true },
+    { name: 'Workday', desc: 'Import org charts and employee records', connected: false },
+    { name: 'DocuSign', desc: 'Request e-signatures within approval flows', connected: false },
+    { name: 'Google Sheets', desc: 'Log workflow outcomes to spreadsheets', connected: true },
+    { name: 'Webhooks', desc: 'Send and receive custom HTTP webhook calls', connected: true },
+    { name: 'PostgreSQL', desc: 'Read/write data from internal databases', connected: true },
   ];
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50/50">
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-sky-100 text-sky-600"><Link size={22} /></div>
           <div>
             <h1 className="text-xl font-bold text-[var(--text-primary)]">Integrations</h1>
             <p className="text-sm text-[var(--text-tertiary)]">Connect external services to your HR workflows</p>
@@ -301,7 +297,6 @@ export function IntegrationsView() {
         <div className="grid grid-cols-2 gap-3">
           {integrations.map(int => (
             <div key={int.name} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow flex items-start gap-3">
-              <span className="text-2xl mt-0.5">{int.icon}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{int.name}</p>
@@ -335,7 +330,6 @@ export function RepositoryView() {
     <div className="flex-1 overflow-y-auto bg-gray-50/50">
       <div className="max-w-4xl mx-auto p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-orange-100 text-orange-600"><Server size={22} /></div>
           <div>
             <h1 className="text-xl font-bold text-[var(--text-primary)]">Workflow Repository</h1>
             <p className="text-sm text-[var(--text-tertiary)]">All saved and demo workflows in one place</p>
@@ -360,7 +354,7 @@ export function RepositoryView() {
         {allWorkflows.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
             <p className="text-sm text-gray-400 mb-2">No workflows yet</p>
-            <button onClick={() => setActiveView('dashboard')} className="text-xs text-[var(--color-brand-600)] hover:underline font-medium">Go to Dashboard to create one →</button>
+            <button onClick={() => setActiveView('dashboard')} className="text-xs text-[var(--color-brand-500)] hover:text-[var(--color-brand-600)] hover:underline font-medium">Go to Dashboard to create one →</button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -394,7 +388,7 @@ export function RepositoryView() {
                       }
                       setActiveView('dashboard');
                     }}
-                    className="text-xs text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] font-medium flex items-center gap-1"
+                    className="text-xs text-[var(--color-brand-500)] hover:text-[var(--color-brand-600)] font-medium flex items-center gap-1 transition-colors"
                   >
                     Open <ArrowRight size={12} />
                   </button>

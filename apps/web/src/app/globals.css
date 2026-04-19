@@ -3,18 +3,18 @@
 
 :root {
   /* Brand */
-  --color-brand-50:  #EEF2FF;
-  --color-brand-100: #E0E7FF;
-  --color-brand-400: #818CF8;
-  --color-brand-500: #6366F1;
-  --color-brand-600: #4F46E5;
+  --color-brand-50:  #FFF7ED; /* Orange 50 */
+  --color-brand-100: #FFEDD5; /* Orange 100 */
+  --color-brand-400: #FB923C; /* Orange 400 */
+  --color-brand-500: #F97316; /* Orange 500 */
+  --color-brand-600: #EA580C; /* Orange 600 */
 
   /* Node accents */
-  --node-start:     #14B8A6;
-  --node-task:      #3B82F6;
-  --node-approval:  #8B5CF6;
-  --node-automated: #F59E0B;
-  --node-end:       #F43F5E;
+  --node-start:     #3B82F6; /* Blue 500 */
+  --node-task:      #F97316; /* Orange 500 */
+  --node-approval:  #8B5CF6; /* Violet 500 */
+  --node-automated: #EC4899; /* Pink 500 */
+  --node-end:       #EF4444; /* Red 500 */
 
   /* Grays */
   --color-gray-50:  #FAFAFA;
