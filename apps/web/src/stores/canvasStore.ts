@@ -81,9 +81,26 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   updateNodeData: (nodeId, data) => {
     set({
-      nodes: get().nodes.map((n) =>
-        n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
-      ),
+      nodes: get().nodes.map((n) => {
+        if (n.id === nodeId) {
+          const timestamp = new Date().toISOString();
+          const oldData = { ...n.data };
+          // Remove internal history array to avoid massive recursion log
+          const historyLog = (oldData.__history as unknown[]) || [];
+          delete oldData.__history;
+          
+          const newHistoryLog = [
+            { timestamp, previousData: oldData, updatedFields: Object.keys(data) },
+            ...historyLog
+          ].slice(0, 10); // keep last 10 edits
+          
+          return {
+            ...n,
+            data: { ...n.data, ...data, __history: newHistoryLog }
+          };
+        }
+        return n;
+      }),
     });
   },
 
