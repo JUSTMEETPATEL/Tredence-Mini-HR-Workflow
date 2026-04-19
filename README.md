@@ -74,6 +74,20 @@ flowchart TB
 
 ## How to Run
 
+### Interactive Quick Setup (Recommended)
+This project includes a bespoke React-based Terminal UI (Ink) that walks you through configuring the database, API keys, and automatically runs the installation.
+
+```bash
+# 1. Install top-level setup dependencies
+npm install
+
+# 2. Launch the interactive TUI configuration wizard
+npm run init
+```
+*Depending on your selections, the tool will guide you on the next execution commands.*
+
+---
+
 ### Option 1: Frontend Only (Mock Mode - Quickest)
 Runs the application purely in the browser using the Service Worker API mock layer. No database required.
 
