@@ -79,6 +79,10 @@ Runs the application purely in the browser using the Service Worker API mock lay
 
 ```bash
 cd apps/web
+
+# Add the OpenRouter API Key for the AI Workflow Generator
+echo "OPENROUTER_API_KEY=your_key_here" > .env
+
 npm install
 npm run dev
 ```
