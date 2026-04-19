@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { StartNodeForm } from '../StartNodeForm';
 import { TaskNodeForm } from '../TaskNodeForm';
 import { ApprovalNodeForm } from '../ApprovalNodeForm';

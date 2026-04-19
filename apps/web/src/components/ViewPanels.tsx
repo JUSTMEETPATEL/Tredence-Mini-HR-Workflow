@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Calendar, BarChart2, Link, Server, CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, Users, FileText, Zap, Globe, Mail, Database, ArrowRight, Activity } from "lucide-react";
+import { ShieldCheck, Calendar, BarChart2, Link, Server, CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, Users, FileText, ArrowRight, Activity } from "lucide-react";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { DEMO_WORKFLOWS } from "@/lib/demo-workflows";
 import { useViewStore } from "@/stores/viewStore";
@@ -9,9 +9,6 @@ import { useViewStore } from "@/stores/viewStore";
    Compliance View
    ──────────────────────────────────────────────────────── */
 export function ComplianceView() {
-  const savedWorkflows = useCanvasStore(s => s.savedWorkflows);
-  const total = savedWorkflows.length;
-
   const rules = [
     { id: 'R-001', label: 'All workflows must have a Start node', status: 'pass' },
     { id: 'R-002', label: 'All workflows must have an End node', status: 'pass' },

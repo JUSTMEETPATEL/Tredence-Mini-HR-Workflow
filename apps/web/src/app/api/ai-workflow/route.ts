@@ -67,7 +67,7 @@ LAYOUT RULES for positions:
 - Start x at 300 for single-column flows.
 - Always start at y=50 and increment by 120.`;
 
-async function tryModel(model: string, apiKey: string, messages: any[]): Promise<Response> {
+async function tryModel(model: string, apiKey: string, messages: {role: string; content: string}[]): Promise<Response> {
   return fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       cleaned = cleaned.replace(/'/g, '"');
 
       parsed = JSON.parse(cleaned);
-    } catch (e) {
+    } catch {
       // Second attempt: try to extract JSON object from the text
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -160,9 +160,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(parsed);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('AI workflow route error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

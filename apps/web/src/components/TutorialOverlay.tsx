@@ -1,24 +1,33 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState, useCallback } from "react";
 import { X, MousePointer2 } from "lucide-react";
 import { useCanvasStore } from "@/stores/canvasStore";
 
+function getInitialStep(): number {
+  if (typeof window === 'undefined') return 0;
+  const completed = localStorage.getItem("tredence_tutorial_completed");
+  return completed ? 0 : 1;
+}
+
 export function TutorialOverlay() {
-  const [isClient, setIsClient] = useState(false);
-  const [step, setStep] = useState(0); // 0=off, 1...8
+  const [step, setStepInner] = useState(getInitialStep); // 0=off, 1...8
   const [demoPlaying, setDemoPlaying] = useState(false);
   
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
 
-  useEffect(() => {
-    setIsClient(true);
-    const completed = localStorage.getItem("tredence_tutorial_completed");
-    if (!completed) {
-      setStep(1); // start tutorial
-    }
+  const completeTutorial = useCallback(() => {
+    setStepInner(() => 0);
+    setDemoPlaying(false);
+    localStorage.setItem("tredence_tutorial_completed", "true");
+  }, []);
+
+  const setStep = useCallback((newStep: number | ((prev: number) => number)) => {
+    setDemoPlaying(false);
+    setStepInner(newStep);
   }, []);
 
   useEffect(() => {
@@ -27,30 +36,24 @@ export function TutorialOverlay() {
     if (step === 1 || step === 1.5) {
       if (nodes.some((n) => n.type === "start")) {
         setStep(2);
-        setDemoPlaying(false);
       }
     } else if (step === 2 || step === 2.5) {
       if (nodes.some((n) => n.type === "task")) {
         setStep(3);
-        setDemoPlaying(false);
       }
     } else if (step === 3 || step === 3.5) {
       if (edges.length > 0) {
         setStep(4);
-        setDemoPlaying(false);
       }
     } else if (step === 4 || step === 4.5) {
       const tNode = nodes.find(n => n.type === "task");
       if (selectedNodeId && selectedNodeId === tNode?.id) {
         setStep(5);
-        setDemoPlaying(false);
       }
     } else if (step === 5 || step === 5.5) {
       const tNode = nodes.find(n => n.type === "task");
-      // Check if title is updated
       if (tNode?.data?.title && tNode.data.title !== "Task" && String(tNode.data.title).length > 0) {
         setStep(6);
-        setDemoPlaying(false);
       } else if (step === 5.5) {
         const handleFocus = () => setDemoPlaying(false);
         const input = document.querySelector('[data-tutorial="tutorial-task-title"]');
@@ -66,14 +69,12 @@ export function TutorialOverlay() {
     } else if (step === 6 || step === 6.5) {
       if (nodes.some((n) => n.type === "end")) {
         setStep(7);
-        setDemoPlaying(false);
       }
     } else if (step === 7 || step === 7.5) {
       const tNode = nodes.find(n => n.type === "task");
       const eNode = nodes.find(n => n.type === "end");
       if (tNode && eNode && edges.some(e => e.source === tNode.id && e.target === eNode.id)) {
         setStep(8);
-        setDemoPlaying(false);
       }
     } else if (step === 8) {
       const handleSimulateClick = () => completeTutorial();
@@ -83,20 +84,14 @@ export function TutorialOverlay() {
         if (btn) btn.removeEventListener("click", handleSimulateClick);
       };
     }
-  }, [step, nodes, edges, selectedNodeId]);
-
-  const completeTutorial = () => {
-    setStep(0);
-    setDemoPlaying(false);
-    localStorage.setItem("tredence_tutorial_completed", "true");
-  };
+  }, [step, nodes, edges, selectedNodeId, setStep, completeTutorial]);
 
   const handleNext = () => {
     setDemoPlaying(true);
     setStep(Math.floor(step) + 0.5);
   };
 
-  if (!isClient || step === 0) return null;
+  if (step === 0) return null;
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
@@ -109,6 +104,7 @@ export function TutorialOverlay() {
 function TutorialDialog({ step, demoPlaying, onNext, onSkip }: { step: number, demoPlaying: boolean, onNext: () => void, onSkip: () => void }) {
   const [pos, setPos] = useState({ top: 0, left: 0, show: false, align: "right" });
   
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     let targetSelector = "";
     let align = "right";

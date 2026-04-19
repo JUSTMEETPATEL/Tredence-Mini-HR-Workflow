@@ -182,7 +182,6 @@ export function Sidebar() {
   const currentWorkflowId = useCanvasStore(s => s.currentWorkflowId);
   const loadWorkflow = useCanvasStore(s => s.loadWorkflow);
   const deleteWorkflow = useCanvasStore(s => s.deleteWorkflow);
-  const nodes = useCanvasStore(s => s.nodes);
 
   const activeNav = useViewStore(s => s.activeView);
   const setActiveNav = useViewStore(s => s.setActiveView);

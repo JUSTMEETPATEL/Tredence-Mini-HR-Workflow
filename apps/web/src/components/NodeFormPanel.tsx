@@ -47,10 +47,16 @@ export function NodeFormPanel() {
     );
   }
 
-  const nodeType = selectedNode.type || 'task';
+  interface HistoryEntry {
+  timestamp: string;
+  previousData: Record<string, unknown>;
+  updatedFields: string[];
+}
+
+const nodeType = selectedNode.type || 'task';
   const FormComponent = FORM_MAP[nodeType];
   const color = COLORS[nodeType] || 'var(--node-task)';
-  const history = selectedNode.data.__history as any[] | undefined;
+  const history = selectedNode.data.__history as HistoryEntry[] | undefined;
 
   return (
     <aside className="w-[var(--right-panel-width)] bg-[var(--surface-primary)] border-l border-[var(--border-default)] h-full flex flex-col shrink-0 overflow-y-auto">
@@ -76,7 +82,7 @@ export function NodeFormPanel() {
         <div className="p-4 mt-auto border-t border-[var(--border-default)]">
           <h4 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Version History</h4>
           <div className="flex flex-col gap-2 relative before:content-[''] before:absolute before:left-1.5 before:top-1 before:bottom-1 before:w-px before:bg-gray-200">
-            {history.map((log: any, idx: number) => {
+            {history.map((log: HistoryEntry, idx: number) => {
               const date = new Date(log.timestamp);
               return (
                 <div key={idx} className="relative pl-5">

@@ -220,7 +220,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             id: e.id,
             source: e.source,
             target: e.target,
-            label: (e as any).label || undefined
+            label: (e as Edge & { label?: string }).label
           }))
         })
       }).catch(err => {

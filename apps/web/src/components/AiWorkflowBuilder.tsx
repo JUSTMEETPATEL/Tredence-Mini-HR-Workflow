@@ -6,6 +6,8 @@ import { useCanvasStore } from "@/stores/canvasStore";
 import { useViewStore } from "@/stores/viewStore";
 
 /* ── Types ──────────────────────────────────────── */
+import type { Node, Edge } from '@xyflow/react';
+
 interface AiOption {
   label: string;
   value: string;
@@ -25,8 +27,8 @@ interface ChatMessage {
   questions?: AiQuestion[];
   workflow?: {
     name: string;
-    nodes: any[];
-    edges: any[];
+    nodes: Node[];
+    edges: Edge[];
   };
 }
 
@@ -57,7 +59,7 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [generatedWorkflow, setGeneratedWorkflow] = useState<{ name: string; nodes: any[]; edges: any[] } | null>(null);
+  const [generatedWorkflow, setGeneratedWorkflow] = useState<{ name: string; nodes: Node[]; edges: Edge[] } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const setActiveView = useViewStore(s => s.setActiveView);
@@ -113,8 +115,9 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
           content: data.message || JSON.stringify(data),
         }]);
       }
-    } catch (err: any) {
-      setMessages([...newMessages, { role: "assistant", content: `Network error: ${err.message}` }]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setMessages([...newMessages, { role: "assistant", content: `Network error: ${msg}` }]);
     } finally {
       setLoading(false);
     }
@@ -156,7 +159,7 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h2 className="text-sm font-bold text-[var(--text-primary)]">AI Workflow Builder</h2>
-              <p className="text-[11px] text-gray-400">Describe your workflow, I'll build it for you</p>
+              <p className="text-[11px] text-gray-400">Describe your workflow, I will build it for you</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-white/80 transition-colors">
@@ -173,7 +176,7 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
                 <Wand2 size={32} className="text-violet-500" />
               </div>
               <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">What workflow would you like to build?</h3>
-              <p className="text-xs text-gray-400 max-w-sm mb-6">Describe your HR process in plain English. I'll ask follow-up questions if needed, then generate the complete workflow.</p>
+              <p className="text-xs text-gray-400 max-w-sm mb-6">Describe your HR process in plain English. I will ask follow-up questions if needed, then generate the complete workflow.</p>
               
               {/* Quick suggestions */}
               <div className="space-y-2 w-full max-w-sm">
@@ -206,7 +209,6 @@ function AiBuilderModal({ onClose }: { onClose: () => void }) {
                   msg={msg}
                   onSubmitAllAnswers={handleBatchAnswers}
                   onApply={handleApplyWorkflow}
-                  hasWorkflow={!!msg.workflow}
                 />
               )}
             </div>
@@ -270,12 +272,10 @@ function AssistantBubble({
   msg,
   onSubmitAllAnswers,
   onApply,
-  hasWorkflow,
 }: {
   msg: ChatMessage;
   onSubmitAllAnswers: (answers: Record<string, string>) => void;
   onApply: () => void;
-  hasWorkflow: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [customTexts, setCustomTexts] = useState<Record<string, string>>({});
@@ -446,8 +446,8 @@ function McqCard({
 }
 
 /* ── Workflow Preview Card ───────────────────── */
-function WorkflowPreviewCard({ workflow, onApply }: { workflow: { name: string; nodes: any[]; edges: any[] }; onApply: () => void }) {
-  const nodeTypes = workflow.nodes.reduce((acc: Record<string, number>, n: any) => {
+function WorkflowPreviewCard({ workflow, onApply }: { workflow: { name: string; nodes: Node[]; edges: Edge[] }; onApply: () => void }) {
+  const nodeTypes = workflow.nodes.reduce((acc: Record<string, number>, n: Node) => {
     acc[n.type] = (acc[n.type] || 0) + 1;
     return acc;
   }, {});
@@ -482,7 +482,7 @@ function WorkflowPreviewCard({ workflow, onApply }: { workflow: { name: string; 
       {/* Node list preview */}
       <div className="bg-white/60 rounded-lg p-3 mb-4 max-h-36 overflow-y-auto">
         <div className="space-y-1.5">
-          {workflow.nodes.map((n: any, i: number) => (
+          {workflow.nodes.map((n: Node, i: number) => (
             <div key={n.id} className="flex items-center gap-2 text-[11px]">
               <span className="text-gray-300 w-4 text-right">{i + 1}.</span>
               <span className={`w-1.5 h-1.5 rounded-full ${
