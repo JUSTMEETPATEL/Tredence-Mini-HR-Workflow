@@ -88,6 +88,7 @@ enum NodeType {
   APPROVAL
   AUTOMATED_STEP
   END
+  AI
 }
 
 enum SimulationStatus {

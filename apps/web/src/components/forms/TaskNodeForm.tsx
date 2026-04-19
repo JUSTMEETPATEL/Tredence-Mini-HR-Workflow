@@ -23,7 +23,7 @@ export function TaskNodeForm({ nodeId, data }: { nodeId: string; data: Record<st
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       <div>
         <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1">Title *</label>
-        <input {...register('title')} className="w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--node-task)]" />
+        <input {...register('title')} data-tutorial="tutorial-task-title" className="w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--node-task)]" />
         {errors.title && <p className="text-[10px] text-red-500 mt-0.5">{errors.title.message}</p>}
       </div>
       <div>

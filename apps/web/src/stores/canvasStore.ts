@@ -14,6 +14,7 @@ import {
 } from '@xyflow/react';
 import { autoLayout } from '@/lib/auto-layout';
 import { validateWorkflow } from '@/lib/workflow-engine';
+import { apiUrl } from '@/lib/api-config';
 import type { WorkflowNode, WorkflowEdge } from '@/lib/types';
 
 export interface ValidationError {
@@ -22,12 +23,24 @@ export interface ValidationError {
   message: string;
 }
 
+export interface SavedWorkflow {
+  id: string;
+  name: string;
+  type: string;
+  nodes: Node[];
+  edges: Edge[];
+  updatedAt: string;
+}
+
 export interface CanvasState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
   validationErrors: ValidationError[];
 
+  currentWorkflowId: string | null;
+  savedWorkflows: SavedWorkflow[];
+  
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   onNodesChange: OnNodesChange;
@@ -40,7 +53,11 @@ export interface CanvasState {
   applyAutoLayout: () => void;
   runValidation: () => ValidationError[];
 
-  // History (undo/redo)
+  saveWorkflow: (name: string, type: string) => void;
+  loadWorkflow: (id: string) => void;
+  createNewWorkflow: () => void;
+  deleteWorkflow: (id: string) => void;
+
   history: { nodes: Node[]; edges: Edge[] }[];
   historyIndex: number;
   pushHistory: () => void;
@@ -48,144 +65,225 @@ export interface CanvasState {
   redo: () => void;
 }
 
-export const useCanvasStore = create<CanvasState>((set, get) => ({
-  nodes: [],
-  edges: [],
-  selectedNodeId: null,
-  validationErrors: [],
-  history: [],
-  historyIndex: -1,
+export const useCanvasStore = create<CanvasState>((set, get) => {
+  // Try to load initial saved workflows from localstorage if possible.
+  // Note: Since this is executed purely on the client side in most cases, we can initialize it safely.
+  let initWorkflows: SavedWorkflow[] = [];
+  if (typeof window !== 'undefined') {
+    try {
+      initWorkflows = JSON.parse(localStorage.getItem('savedWorkflows') || '[]');
+    } catch {}
+  }
 
-  setNodes: (nodes) => set({ nodes }),
-  setEdges: (edges) => set({ edges }),
+  return {
+    nodes: [],
+    edges: [],
+    selectedNodeId: null,
+    validationErrors: [],
+    history: [],
+    historyIndex: -1,
 
-  onNodesChange: (changes) => {
-    set({ nodes: applyNodeChanges(changes, get().nodes) });
-  },
+    currentWorkflowId: null,
+    savedWorkflows: initWorkflows,
 
-  onEdgesChange: (changes) => {
-    set({ edges: applyEdgeChanges(changes, get().edges) });
-  },
+    setNodes: (nodes) => set({ nodes }),
+    setEdges: (edges) => set({ edges }),
 
-  onConnect: (connection) => {
-    const state = get();
-    state.pushHistory();
-    set({ edges: addEdge(connection, state.edges) });
-  },
+    onNodesChange: (changes) => {
+      set({ nodes: applyNodeChanges(changes, get().nodes) });
+    },
 
-  addNode: (node) => {
-    const state = get();
-    state.pushHistory();
-    set({ nodes: [...state.nodes, node] });
-  },
+    onEdgesChange: (changes) => {
+      set({ edges: applyEdgeChanges(changes, get().edges) });
+    },
 
-  updateNodeData: (nodeId, data) => {
-    set({
-      nodes: get().nodes.map((n) => {
-        if (n.id === nodeId) {
-          const timestamp = new Date().toISOString();
-          const oldData = { ...n.data };
-          // Remove internal history array to avoid massive recursion log
-          const historyLog = (oldData.__history as unknown[]) || [];
-          delete oldData.__history;
-          
-          const newHistoryLog = [
-            { timestamp, previousData: oldData, updatedFields: Object.keys(data) },
-            ...historyLog
-          ].slice(0, 10); // keep last 10 edits
-          
-          return {
-            ...n,
-            data: { ...n.data, ...data, __history: newHistoryLog }
-          };
-        }
-        return n;
-      }),
-    });
-  },
+    onConnect: (connection) => {
+      const state = get();
+      state.pushHistory();
+      set({ edges: addEdge(connection, state.edges) });
+    },
 
-  selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+    addNode: (node) => {
+      const state = get();
+      state.pushHistory();
+      set({ nodes: [...state.nodes, node] });
+    },
 
-  deleteSelected: () => {
-    const state = get();
-    const { selectedNodeId } = state;
-    if (!selectedNodeId) return;
-    state.pushHistory();
-    set({
-      nodes: state.nodes.filter((n) => n.id !== selectedNodeId),
-      edges: state.edges.filter(
-        (e) => e.source !== selectedNodeId && e.target !== selectedNodeId
-      ),
-      selectedNodeId: null,
-    });
-  },
+    updateNodeData: (nodeId, data) => {
+      set({
+        nodes: get().nodes.map((n) => {
+          if (n.id === nodeId) {
+            const timestamp = new Date().toISOString();
+            const oldData = { ...n.data };
+            const historyLog = (oldData.__history as unknown[]) || [];
+            delete oldData.__history;
+            
+            const newHistoryLog = [
+              { timestamp, previousData: oldData, updatedFields: Object.keys(data) },
+              ...historyLog
+            ].slice(0, 10);
+            
+            return {
+              ...n,
+              data: { ...n.data, ...data, __history: newHistoryLog }
+            };
+          }
+          return n;
+        }),
+      });
+    },
 
-  // ── Auto-layout (dagre) ───────────────────────
-  applyAutoLayout: () => {
-    const state = get();
-    state.pushHistory();
-    const layouted = autoLayout(state.nodes, state.edges, 'TB');
-    set({ nodes: layouted });
-  },
+    selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
 
-  // ── Validation ────────────────────────────────
-  runValidation: () => {
-    const { nodes, edges } = get();
-    if (nodes.length === 0) {
-      set({ validationErrors: [] });
-      return [];
-    }
+    deleteSelected: () => {
+      const state = get();
+      const { selectedNodeId } = state;
+      if (!selectedNodeId) return;
+      state.pushHistory();
+      set({
+        nodes: state.nodes.filter((n) => n.id !== selectedNodeId),
+        edges: state.edges.filter(
+          (e) => e.source !== selectedNodeId && e.target !== selectedNodeId
+        ),
+        selectedNodeId: null,
+      });
+    },
 
-    const wfNodes: WorkflowNode[] = nodes.map((n) => ({
-      id: n.id,
-      type: (n.type || 'task') as WorkflowNode['type'],
-      position: n.position,
-      data: n.data as unknown as WorkflowNode['data'],
-    }));
-    const wfEdges: WorkflowEdge[] = edges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-    }));
+    applyAutoLayout: () => {
+      const state = get();
+      state.pushHistory();
+      const layouted = autoLayout(state.nodes, state.edges, 'LR');
+      set({ nodes: layouted });
+    },
 
-    const violations = validateWorkflow(wfNodes, wfEdges);
-    set({ validationErrors: violations });
-    return violations;
-  },
+    runValidation: () => {
+      const { nodes, edges } = get();
+      if (nodes.length === 0) {
+        set({ validationErrors: [] });
+        return [];
+      }
 
-  // ── History ────────────────────────────────────
-  pushHistory: () => {
-    const { nodes, edges, history, historyIndex } = get();
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push({
-      nodes: JSON.parse(JSON.stringify(nodes)),
-      edges: JSON.parse(JSON.stringify(edges)),
-    });
-    // Keep max 50 entries
-    if (newHistory.length > 50) newHistory.shift();
-    set({ history: newHistory, historyIndex: newHistory.length - 1 });
-  },
+      const wfNodes: WorkflowNode[] = nodes.map((n) => ({
+        id: n.id,
+        type: (n.type || 'task') as WorkflowNode['type'],
+        position: n.position,
+        data: n.data as unknown as WorkflowNode['data'],
+      }));
+      const wfEdges: WorkflowEdge[] = edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+      }));
 
-  undo: () => {
-    const { history, historyIndex } = get();
-    if (historyIndex <= 0) return;
-    const prev = history[historyIndex - 1];
-    set({
-      nodes: JSON.parse(JSON.stringify(prev.nodes)),
-      edges: JSON.parse(JSON.stringify(prev.edges)),
-      historyIndex: historyIndex - 1,
-    });
-  },
+      const violations = validateWorkflow(wfNodes, wfEdges);
+      set({ validationErrors: violations });
+      return violations;
+    },
 
-  redo: () => {
-    const { history, historyIndex } = get();
-    if (historyIndex >= history.length - 1) return;
-    const next = history[historyIndex + 1];
-    set({
-      nodes: JSON.parse(JSON.stringify(next.nodes)),
-      edges: JSON.parse(JSON.stringify(next.edges)),
-      historyIndex: historyIndex + 1,
-    });
-  },
-}));
+    saveWorkflow: (name, type) => {
+      const state = get();
+      const newWorkflow: SavedWorkflow = {
+        id: state.currentWorkflowId || `wf_${Date.now()}`,
+        name,
+        type,
+        nodes: JSON.parse(JSON.stringify(state.nodes)),
+        edges: JSON.parse(JSON.stringify(state.edges)),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const newWorkflows = state.currentWorkflowId 
+        ? state.savedWorkflows.map(wf => wf.id === state.currentWorkflowId ? newWorkflow : wf)
+        : [newWorkflow, ...state.savedWorkflows];
+        
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('savedWorkflows', JSON.stringify(newWorkflows));
+      }
+      
+      set({ savedWorkflows: newWorkflows, currentWorkflowId: newWorkflow.id });
+
+      // Background DB Sync
+      fetch(apiUrl(`/workflows/${newWorkflow.id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newWorkflow.name,
+          description: newWorkflow.type,
+          nodes: newWorkflow.nodes.map(n => ({
+            id: n.id,
+            type: n.type || 'task',
+            position: n.position,
+            data: n.data || {}
+          })),
+          edges: newWorkflow.edges.map(e => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            label: (e as any).label || undefined
+          }))
+        })
+      }).catch(err => {
+        console.error('[DB Sync] Failed to save workflow to backend:', err);
+      });
+    },
+
+    loadWorkflow: (id) => {
+      const state = get();
+      const wf = state.savedWorkflows.find(w => w.id === id);
+      if (wf) {
+        set({ nodes: wf.nodes, edges: wf.edges, currentWorkflowId: wf.id, history: [], historyIndex: -1, selectedNodeId: null, validationErrors: [] });
+      }
+    },
+
+    createNewWorkflow: () => {
+      set({ nodes: [], edges: [], currentWorkflowId: null, history: [], historyIndex: -1, selectedNodeId: null, validationErrors: [] });
+    },
+
+    deleteWorkflow: (id) => {
+      const state = get();
+      const newWorkflows = state.savedWorkflows.filter(wf => wf.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('savedWorkflows', JSON.stringify(newWorkflows));
+      }
+      set({ savedWorkflows: newWorkflows });
+      if (state.currentWorkflowId === id) {
+        get().createNewWorkflow();
+      }
+    },
+
+    pushHistory: () => {
+      const { nodes, edges, history, historyIndex } = get();
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push({
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+      });
+      if (newHistory.length > 50) newHistory.shift();
+      set({ history: newHistory, historyIndex: newHistory.length - 1 });
+    },
+
+    undo: () => {
+      const { history, historyIndex } = get();
+      if (historyIndex <= 0) return;
+      const prev = history[historyIndex - 1];
+      set({
+        nodes: JSON.parse(JSON.stringify(prev.nodes)),
+        edges: JSON.parse(JSON.stringify(prev.edges)),
+        historyIndex: historyIndex - 1,
+      });
+    },
+
+    redo: () => {
+      const { history, historyIndex } = get();
+      if (historyIndex >= history.length - 1) return;
+      const next = history[historyIndex + 1];
+      set({
+        nodes: JSON.parse(JSON.stringify(next.nodes)),
+        edges: JSON.parse(JSON.stringify(next.edges)),
+        historyIndex: historyIndex + 1,
+      });
+    },
+  };
+});
 
