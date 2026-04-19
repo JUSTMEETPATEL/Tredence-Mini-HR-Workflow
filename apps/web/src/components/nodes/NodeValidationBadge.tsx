@@ -5,9 +5,8 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { AlertTriangle } from 'lucide-react';
 
 export function NodeValidationBadge({ nodeId }: { nodeId: string }) {
-  const errors = useCanvasStore((s) =>
-    s.validationErrors.filter((e) => e.nodeId === nodeId)
-  );
+  const validationErrors = useCanvasStore((s) => s.validationErrors);
+  const errors = validationErrors.filter((e) => e.nodeId === nodeId);
 
   if (errors.length === 0) return null;
 

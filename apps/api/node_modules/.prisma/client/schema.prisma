@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Automation {
@@ -88,6 +87,7 @@ enum NodeType {
   APPROVAL
   AUTOMATED_STEP
   END
+  AI
 }
 
 enum SimulationStatus {

@@ -1043,13 +1043,13 @@ CORS_ORIGIN          → kv secret: hr-workflow-cors-origin
 
 ### Phase 4 — Polish (bonus) ✅
 
-- [ ] Storybook stories for all node components and forms
+- [x] Storybook stories for all node components and forms (`__stories__` directories)
 - [x] Playwright E2E suite (`e2e/app-shell.spec.ts`, `toolbar.spec.ts`, `node-palette.spec.ts` — 15 test cases)
 - [x] Undo/redo (Zustand history middleware in `canvasStore`)
 - [x] Auto-layout (dagre) — `lib/auto-layout.ts` + toolbar button
 - [x] JSON export/import (TopBar buttons)
 - [x] Workflow validation error badges on nodes — `NodeValidationBadge.tsx` with pulse animation + hover tooltips
-- [ ] Node version history
+- [x] Node version history (tracked via Zustand `canvasStore.ts` in object `data.__history`, rendered in `NodeFormPanel.tsx`)
 
 ---
 

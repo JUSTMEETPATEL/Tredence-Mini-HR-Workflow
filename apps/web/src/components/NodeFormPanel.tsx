@@ -47,9 +47,16 @@ export function NodeFormPanel() {
     );
   }
 
-  const nodeType = selectedNode.type || 'task';
+  interface HistoryEntry {
+  timestamp: string;
+  previousData: Record<string, unknown>;
+  updatedFields: string[];
+}
+
+const nodeType = selectedNode.type || 'task';
   const FormComponent = FORM_MAP[nodeType];
   const color = COLORS[nodeType] || 'var(--node-task)';
+  const history = selectedNode.data.__history as HistoryEntry[] | undefined;
 
   return (
     <aside className="w-[var(--right-panel-width)] bg-[var(--surface-primary)] border-l border-[var(--border-default)] h-full flex flex-col shrink-0 overflow-y-auto">
@@ -69,6 +76,29 @@ export function NodeFormPanel() {
           <p className="text-xs text-[var(--text-tertiary)]">No form available for this node type.</p>
         )}
       </div>
+
+      {/* Node Version History */}
+      {history && Array.isArray(history) && history.length > 0 && (
+        <div className="p-4 mt-auto border-t border-[var(--border-default)]">
+          <h4 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Version History</h4>
+          <div className="flex flex-col gap-2 relative before:content-[''] before:absolute before:left-1.5 before:top-1 before:bottom-1 before:w-px before:bg-gray-200">
+            {history.map((log: HistoryEntry, idx: number) => {
+              const date = new Date(log.timestamp);
+              return (
+                <div key={idx} className="relative pl-5">
+                  <div className="absolute left-0 top-1.5 w-3 h-3 bg-white border-2 border-gray-300 rounded-full" />
+                  <p className="text-[11px] text-[var(--text-primary)] font-medium">
+                    Updated {log.updatedFields?.join(', ') || 'fields'}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
