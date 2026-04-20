@@ -391,7 +391,10 @@ function McqCard({
   const isAnswered = selected && (!isCustomSelected || customText.trim());
 
   return (
-    <div className={`border rounded-xl p-4 transition-all ${submitted ? 'border-emerald-200 bg-emerald-50/50' : isAnswered ? 'border-orange-300 bg-orange-50/40' : 'border-[var(--border-default)] bg-[var(--surface-elevated)]'}`}>
+    <div
+      className={`border rounded-xl p-4 transition-all ${submitted ? 'border-emerald-200 bg-emerald-50/50' : 'border-[var(--border-default)] bg-[var(--surface-elevated)]'}`}
+      style={!submitted && isAnswered ? { borderColor: 'rgba(249, 115, 22, 0.45)', backgroundColor: 'var(--surface-tint)' } : undefined}
+    >
       <p className="text-xs font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
         <MessageSquare size={13} className="text-orange-500" />
         {question.text}
@@ -405,15 +408,43 @@ function McqCard({
             className={`
               text-left px-3 py-2.5 rounded-lg text-xs border transition-all
               ${selected === opt.value
-                ? 'border-orange-500 bg-orange-100 text-orange-700 font-medium shadow-sm'
+                ? 'font-medium shadow-sm'
                 : submitted
                   ? 'border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-tertiary)] cursor-not-allowed'
-                  : 'border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:border-orange-300 hover:bg-orange-50 cursor-pointer'
+                  : 'border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] cursor-pointer'
               }
               flex items-center gap-2
             `}
+            style={
+              selected === opt.value
+                ? {
+                    borderColor: 'var(--color-brand-500)',
+                    backgroundColor: 'var(--surface-secondary)',
+                    color: 'var(--text-primary)',
+                  }
+                : !submitted
+                  ? {
+                      transition: 'background-color 140ms ease, border-color 140ms ease, color 140ms ease',
+                    }
+                  : undefined
+            }
+            onMouseEnter={(event) => {
+              if (selected === opt.value || submitted) return;
+              event.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.45)';
+              event.currentTarget.style.backgroundColor = 'var(--surface-secondary)';
+              event.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(event) => {
+              if (selected === opt.value || submitted) return;
+              event.currentTarget.style.borderColor = 'var(--border-default)';
+              event.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
+              event.currentTarget.style.color = 'var(--text-secondary)';
+            }}
           >
-            <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === opt.value ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
+            <span
+              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === opt.value ? '' : 'border-gray-300'}`}
+              style={selected === opt.value ? { borderColor: 'var(--color-brand-500)', backgroundColor: 'var(--color-brand-500)' } : undefined}
+            >
               {selected === opt.value && <CheckCircle2 size={10} className="text-white" />}
             </span>
             {opt.label}
