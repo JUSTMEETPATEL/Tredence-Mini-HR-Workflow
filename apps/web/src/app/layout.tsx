@@ -19,6 +19,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${openSans.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="h-full flex flex-col font-sans bg-[var(--canvas-bg)] text-[var(--text-primary)]">

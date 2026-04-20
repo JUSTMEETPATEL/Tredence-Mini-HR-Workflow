@@ -8,22 +8,31 @@ This project is a powerful demonstration of React Flow, state management, MSW mo
 
 ---
 
+## Live Demo
+
+- Production demo: https://tredence.meetpatel.tech
+
+---
+
 ## What Was Completed
 
 I approached this time-boxed exercise (4-6 hours) with a "Senior Engineer Shipping Value" mindset, prioritizing architectural clarity, performance, and a stunning UI inspired heavily by the provided `CodeAuto` design references.
 
 ### Core Functional Requirements
-- **React Flow Canvas**: 6 distinct custom nodes (Start, Task, Approval, Automated Step, AI Step, End) featuring deep interactivity, custom handles, and interactive styling.
-- **Node Form Panels**: A reactive properties sidebar that mounts Zod-validated, dynamic forms strictly typed to the selected node. Features include threshold settings, role selection, dynamic API-driven parameters, and custom AI metadata.
+- **React Flow Canvas**: 5 distinct custom nodes (Start, Task, Approval, Automated Step, End) with custom handles, live selection, drag-and-drop placement, and responsive canvas controls.
+- **Node Form Panels**: A reactive properties sidebar with typed forms for the selected node, including approval thresholds, assignee metadata, dynamic automation parameters, and end-state settings.
 - **Mock API Layer (MSW)**: Fully featured in-browser MSW mock intercepts for `GET /automations` and `POST /simulate`.
 - **Workflow Sandbox**: A built-in graph traversal engine (BFS constraint validator) that sends the graph to the API and renders a clean, timeline-style execution log catching infinite loops and missing edges.
 
 ### Bonus / Advanced Implementations (Optional Criteria)
 - **Real Database Capability**: While the prompt said "No backend required," I architected a hybrid schema where the app intelligently syncs simulation runs and workflow layouts to a **Hono.js + Prisma PostgreSQL** backend via background endpoints if the backend is mounted.
-- **Auto Layout (Horizontal)**: Integrated algorithmic Dagre auto-layout mapping the workflow cleanly on a Left-to-Right axis.
-- **Undo / Redo / Export / Import**: Added JSON state-tree serialization in the header ribbon so workflows can be exported and stored. 
+- **Guided Onboarding Tutorial**: Added a one-time localStorage-backed onboarding flow with anchored callouts, looping cursor demos, skip controls, and step-by-step guidance for panning, placing, connecting, and simulating workflows.
+- **Canvas Productivity Tools**: Added multi-select, copy/paste, delete shortcuts, and one-click auto-connect for nodes in canvas order.
+- **Theme Modes**: Added system-default theme support with explicit system, light, and dark modes.
+- **Auto Layout (Horizontal)**: Integrated algorithmic Dagre auto-layout mapping the workflow cleanly on a left-to-right axis.
+- **Undo / Redo / Export / Import**: Added JSON state-tree serialization in the header ribbon so workflows can be exported and stored.
 - **Real-time Error Badges**: Live structural validation highlighting nodes with missing connections dynamically.
-- **AI-Agent Custom Node**: Added a custom generative-AI node conceptually showcasing AI task offloading for future LLM workflow processes!
+- **Production Deployment Path**: Deployed the web app to Azure AKS behind NGINX ingress with Let’s Encrypt TLS and a repeatable redeploy script.
 
 ---
 
@@ -32,6 +41,8 @@ I approached this time-boxed exercise (4-6 hours) with a "Senior Engineer Shippi
 The project leverages a modern monorepo-friendly folder structure, enforcing strict separation of concerns between canvas interaction, validation logic, and the API layer. 
 
 The application is fully containerized, exposing the services via a reverse proxy and segmenting state logic explicitly.
+
+### Local / Docker Architecture
 
 ```mermaid
 flowchart TB
@@ -57,6 +68,30 @@ flowchart TB
         
         NextJS -.->|API Mode: Real| HonoAPI
     end
+```
+
+### Azure Deployment Architecture
+
+```mermaid
+flowchart TB
+    User((Evaluator / HR Admin)) -->|HTTPS| DNS["tredence.meetpatel.tech"]
+    DNS --> IngressIP["Azure Public IP / NGINX Ingress"]
+
+    subgraph Azure["Azure AKS Deployment"]
+        IngressIP --> Nginx["ingress-nginx controller"]
+        CertManager["cert-manager"] --> LetsEncrypt["Let's Encrypt ACME"]
+        Nginx -->|TLS secret: hr-workflow-tls| WebSvc["web service"]
+        Nginx -->|/api| ApiSvc["api service"]
+
+        WebSvc --> WebPods["Next.js web pods"]
+        ApiSvc --> ApiPods["Hono API pods"]
+        ApiPods --> Postgres["Azure PostgreSQL Flexible Server"]
+    end
+
+    DevMachine["Local machine / CI"] -->|docker buildx + push| ACR["Azure Container Registry"]
+    DevMachine -->|kubectl rollout restart| Azure
+    ACR --> WebPods
+    ACR --> ApiPods
 ```
 
 ## Design Decisions & Trade-offs
@@ -121,6 +156,21 @@ docker compose exec api npx prisma db push --accept-data-loss
 docker compose exec api npx tsx src/seed.ts
 ```
 Open **http://localhost** (or http://localhost:80) in your browser to experience the dashboard served through the Nginx reverse proxy, backed by a live PostgreSQL Database container!
+
+### Option 3: Redeploy Web to Azure
+
+If Azure login, Docker, and `kubectl` are already configured locally, you can rebuild and redeploy the web app with:
+
+```bash
+./infra/redeploy-web.sh
+```
+
+This script:
+- logs into ACR
+- builds and pushes `apps/web`
+- refreshes AKS credentials
+- reapplies ingress/cert-manager manifests from the repo
+- restarts the `web` deployment and waits for rollout
 
 ---
 

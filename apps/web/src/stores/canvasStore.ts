@@ -32,10 +32,17 @@ export interface SavedWorkflow {
   updatedAt: string;
 }
 
+interface ClipboardSnapshot {
+  nodes: Node[];
+  edges: Edge[];
+}
+
 export interface CanvasState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
+  selectedNodeIds: string[];
+  clipboard: ClipboardSnapshot | null;
   validationErrors: ValidationError[];
 
   currentWorkflowId: string | null;
@@ -49,7 +56,11 @@ export interface CanvasState {
   addNode: (node: Node) => void;
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   selectNode: (nodeId: string | null) => void;
+  setSelectedNodes: (nodeIds: string[]) => void;
   deleteSelected: () => void;
+  copySelected: () => void;
+  pasteClipboard: () => void;
+  autoConnectNodes: () => void;
   applyAutoLayout: () => void;
   runValidation: () => ValidationError[];
 
@@ -79,6 +90,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     nodes: [],
     edges: [],
     selectedNodeId: null,
+    selectedNodeIds: [],
+    clipboard: null,
     validationErrors: [],
     history: [],
     historyIndex: -1,
@@ -86,7 +99,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     currentWorkflowId: null,
     savedWorkflows: initWorkflows,
 
-    setNodes: (nodes) => set({ nodes }),
+    setNodes: (nodes) => {
+      const selectedNodeIds = nodes.filter((node) => node.selected).map((node) => node.id);
+      set({
+        nodes,
+        selectedNodeIds,
+        selectedNodeId: selectedNodeIds.length === 1 ? selectedNodeIds[0] : null,
+      });
+    },
     setEdges: (edges) => set({ edges }),
 
     onNodesChange: (changes) => {
@@ -133,20 +153,137 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       });
     },
 
-    selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+    selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedNodeIds: nodeId ? [nodeId] : [] }),
+
+    setSelectedNodes: (nodeIds) => set({
+      selectedNodeIds: nodeIds,
+      selectedNodeId: nodeIds.length === 1 ? nodeIds[0] : null,
+    }),
 
     deleteSelected: () => {
       const state = get();
-      const { selectedNodeId } = state;
-      if (!selectedNodeId) return;
+      const selectedIds = new Set([
+        ...state.selectedNodeIds,
+        ...state.nodes.filter((n) => n.selected).map((n) => n.id),
+      ]);
+      if (selectedIds.size === 0 && state.selectedNodeId) selectedIds.add(state.selectedNodeId);
+      if (selectedIds.size === 0) return;
       state.pushHistory();
       set({
-        nodes: state.nodes.filter((n) => n.id !== selectedNodeId),
+        nodes: state.nodes.filter((n) => !selectedIds.has(n.id)),
         edges: state.edges.filter(
-          (e) => e.source !== selectedNodeId && e.target !== selectedNodeId
+          (e) => !selectedIds.has(e.source) && !selectedIds.has(e.target)
         ),
         selectedNodeId: null,
+        selectedNodeIds: [],
       });
+    },
+
+    copySelected: () => {
+      const state = get();
+      const selectedIds = new Set([
+        ...state.selectedNodeIds,
+        ...state.nodes.filter((n) => n.selected).map((n) => n.id),
+      ]);
+      if (selectedIds.size === 0 && state.selectedNodeId) selectedIds.add(state.selectedNodeId);
+      if (selectedIds.size === 0) return;
+
+      const copiedNodes = state.nodes.filter((n) => selectedIds.has(n.id));
+      const copiedEdges = state.edges.filter((e) => selectedIds.has(e.source) && selectedIds.has(e.target));
+
+      set({
+        clipboard: {
+          nodes: JSON.parse(JSON.stringify(copiedNodes)),
+          edges: JSON.parse(JSON.stringify(copiedEdges)),
+        },
+      });
+    },
+
+    pasteClipboard: () => {
+      const state = get();
+      if (!state.clipboard || state.clipboard.nodes.length === 0) return;
+      state.pushHistory();
+
+      const timestamp = Date.now();
+      const idMap = new Map<string, string>();
+      const pasteOffset = 48;
+
+      const pastedNodes = state.clipboard.nodes.map((node, index) => {
+        const newId = `${node.type || 'node'}-${timestamp}-${index}`;
+        idMap.set(node.id, newId);
+
+        return {
+          ...JSON.parse(JSON.stringify(node)),
+          id: newId,
+          selected: true,
+          position: {
+            x: node.position.x + pasteOffset,
+            y: node.position.y + pasteOffset,
+          },
+        } satisfies Node;
+      });
+
+      const pastedEdges = state.clipboard.edges.flatMap((edge, index) => {
+        const source = idMap.get(edge.source);
+        const target = idMap.get(edge.target);
+        if (!source || !target) return [];
+
+        return [{
+          ...JSON.parse(JSON.stringify(edge)),
+          id: `edge-${source}-${target}-${timestamp}-${index}`,
+          source,
+          target,
+          selected: false,
+        } satisfies Edge];
+      });
+
+      const pastedIds = pastedNodes.map((node) => node.id);
+
+      set({
+        nodes: [
+          ...state.nodes.map((node) => ({ ...node, selected: false })),
+          ...pastedNodes,
+        ],
+        edges: [
+          ...state.edges.map((edge) => ({ ...edge, selected: false })),
+          ...pastedEdges,
+        ],
+        selectedNodeIds: pastedIds,
+        selectedNodeId: pastedIds.length === 1 ? pastedIds[0] : null,
+      });
+    },
+
+    autoConnectNodes: () => {
+      const state = get();
+      if (state.nodes.length < 2) return;
+
+      const orderedNodes = [...state.nodes].sort((a, b) => {
+        const xDiff = a.position.x - b.position.x;
+        return Math.abs(xDiff) > 40 ? xDiff : a.position.y - b.position.y;
+      });
+
+      const existingPairs = new Set(state.edges.map((edge) => `${edge.source}->${edge.target}`));
+      const newEdges: Edge[] = [];
+
+      for (let i = 0; i < orderedNodes.length - 1; i += 1) {
+        const source = orderedNodes[i].id;
+        const target = orderedNodes[i + 1].id;
+        const pair = `${source}->${target}`;
+        if (existingPairs.has(pair)) continue;
+
+        existingPairs.add(pair);
+        newEdges.push({
+          id: `edge-${source}-${target}-${Date.now()}-${i}`,
+          source,
+          target,
+          type: 'smoothstep',
+          animated: true,
+        });
+      }
+
+      if (newEdges.length === 0) return;
+      state.pushHistory();
+      set({ edges: [...state.edges, ...newEdges] });
     },
 
     applyAutoLayout: () => {
@@ -232,12 +369,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       const state = get();
       const wf = state.savedWorkflows.find(w => w.id === id);
       if (wf) {
-        set({ nodes: wf.nodes, edges: wf.edges, currentWorkflowId: wf.id, history: [], historyIndex: -1, selectedNodeId: null, validationErrors: [] });
+        set({ nodes: wf.nodes, edges: wf.edges, currentWorkflowId: wf.id, history: [], historyIndex: -1, selectedNodeId: null, selectedNodeIds: [], validationErrors: [] });
       }
     },
 
     createNewWorkflow: () => {
-      set({ nodes: [], edges: [], currentWorkflowId: null, history: [], historyIndex: -1, selectedNodeId: null, validationErrors: [] });
+      set({ nodes: [], edges: [], currentWorkflowId: null, history: [], historyIndex: -1, selectedNodeId: null, selectedNodeIds: [], validationErrors: [] });
     },
 
     deleteWorkflow: (id) => {
@@ -286,4 +423,3 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
   };
 });
-

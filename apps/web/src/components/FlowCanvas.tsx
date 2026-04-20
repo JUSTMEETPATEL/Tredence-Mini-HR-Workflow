@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
   BackgroundVariant,
+  PanOnScrollMode,
+  SelectionMode,
   type Node,
+  type OnSelectionChangeParams,
   type ReactFlowInstance,
 } from '@xyflow/react';
 
@@ -30,7 +33,10 @@ export function FlowCanvas() {
   const onConnect = useCanvasStore((s) => s.onConnect);
   const addNode = useCanvasStore((s) => s.addNode);
   const selectNode = useCanvasStore((s) => s.selectNode);
+  const setSelectedNodes = useCanvasStore((s) => s.setSelectedNodes);
   const deleteSelected = useCanvasStore((s) => s.deleteSelected);
+  const copySelected = useCanvasStore((s) => s.copySelected);
+  const pasteClipboard = useCanvasStore((s) => s.pasteClipboard);
 
   const nodeTypes = useMemo(() => ({
     start: StartNode,
@@ -68,8 +74,47 @@ export function FlowCanvas() {
     selectNode(null);
   }, [selectNode]);
 
+  const onSelectionChange = useCallback(({ nodes: selectedNodes }: OnSelectionChangeParams) => {
+    setSelectedNodes(selectedNodes.map((node) => node.id));
+  }, [setSelectedNodes]);
+
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      return Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) return;
+
+      const isModifierPressed = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+
+      if (isModifierPressed && key === 'c') {
+        e.preventDefault();
+        copySelected();
+        return;
+      }
+
+      if (isModifierPressed && key === 'v') {
+        e.preventDefault();
+        pasteClipboard();
+        return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelected();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [copySelected, deleteSelected, pasteClipboard]);
+
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
       deleteSelected();
     }
   }, [deleteSelected]);
@@ -126,9 +171,16 @@ export function FlowCanvas() {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onSelectionChange={onSelectionChange}
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        panOnDrag={false}
+        panOnScroll
+        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll={false}
         fitView
         deleteKeyCode={null}
         className="bg-[var(--canvas-bg)]"
@@ -143,7 +195,7 @@ export function FlowCanvas() {
           zoomable
           className="!bg-white !border !border-gray-200 !rounded-lg !shadow-sm"
         />
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(0,0,0,0.07)" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--canvas-dot-color)" />
       </ReactFlow>
     </div>
   );

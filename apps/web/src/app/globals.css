@@ -43,16 +43,20 @@
   --surface-primary:    #FFFFFF;
   --surface-secondary:  #FAFAFA;
   --surface-tertiary:   #F4F4F5;
+  --surface-elevated:   #FFFFFF;
 
   /* Text */
   --text-primary:       #18181B;
   --text-secondary:     #52525B;
   --text-tertiary:      #A1A1AA;
+  --text-inverse:       #FFFFFF;
 
   /* Borders */
   --border-default:     rgba(0, 0, 0, 0.08);
   --border-subtle:      rgba(0, 0, 0, 0.05);
   --border-strong:      rgba(0, 0, 0, 0.15);
+
+  --overlay-backdrop:   rgba(0, 0, 0, 0.4);
 
   /* Layout */
   --sidebar-width:      240px;
@@ -60,6 +64,28 @@
   --right-panel-width:  320px;
   --toolbar-height:     52px;
   --sandbox-height:     320px;
+
+  --background: var(--surface-primary);
+  --foreground: var(--text-primary);
+}
+
+[data-theme="dark"] {
+  --canvas-bg:          #111318;
+  --canvas-dot-color:   rgba(255, 255, 255, 0.08);
+
+  --surface-primary:    #171A21;
+  --surface-secondary:  #1D212B;
+  --surface-tertiary:   #252A36;
+  --surface-elevated:   #202532;
+
+  --text-primary:       #F4F7FB;
+  --text-secondary:     #BBC4D3;
+  --text-tertiary:      #7F8A9C;
+  --text-inverse:       #0F1117;
+
+  --border-default:     rgba(255, 255, 255, 0.1);
+  --border-subtle:      rgba(255, 255, 255, 0.06);
+  --border-strong:      rgba(255, 255, 255, 0.2);
 
   --background: var(--surface-primary);
   --foreground: var(--text-primary);
@@ -102,6 +128,10 @@ body {
   font-family: var(--font-sans);
 }
 
+html, body {
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
 /* React Flow customisations */
 .react-flow__node {
   border-radius: 8px;
@@ -111,4 +141,68 @@ body {
   height: 10px;
   background-color: var(--color-brand-500);
   border: 2px solid white;
+}
+
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .\!bg-white {
+  background-color: var(--surface-primary) !important;
+}
+
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-gray-50\/50 {
+  background-color: var(--surface-secondary) !important;
+}
+
+[data-theme="dark"] .bg-gray-100,
+[data-theme="dark"] .bg-gray-100\/50 {
+  background-color: var(--surface-tertiary) !important;
+}
+
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300,
+[data-theme="dark"] .\!border-gray-200 {
+  border-color: var(--border-default) !important;
+}
+
+[data-theme="dark"] .text-gray-300,
+[data-theme="dark"] .text-gray-400,
+[data-theme="dark"] .text-gray-500 {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-black {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .text-white {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .fill-white {
+  fill: var(--surface-primary) !important;
+}
+
+[data-theme="dark"] .hover\:bg-gray-50:hover,
+[data-theme="dark"] .hover\:bg-gray-100:hover {
+  background-color: var(--surface-tertiary) !important;
+}
+
+[data-theme="dark"] .hover\:text-black:hover {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+[data-theme="dark"] .react-flow__controls,
+[data-theme="dark"] .react-flow__minimap {
+  background: var(--surface-primary) !important;
+  border-color: var(--border-default) !important;
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Code, RotateCcw, RotateCw, Play, Upload, Download, LayoutGrid, ShieldCheck, Save, X } from "lucide-react";
+import { RotateCcw, RotateCw, Play, Upload, Download, LayoutGrid, ShieldCheck, Save, X, Link as LinkIcon, Sun, Moon, Laptop } from "lucide-react";
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useSimulationStore } from '@/stores/simulationStore';
 import { serializeWorkflow, deserializeWorkflow } from '@/lib/workflow-engine';
 import type { WorkflowNode, WorkflowEdge } from '@/lib/types';
+import { useTheme, type ThemeMode } from './providers/ThemeProvider';
 
 const WORKFLOW_TYPES = [
   { value: 'onboarding', label: 'Onboarding' },
@@ -18,6 +19,7 @@ const WORKFLOW_TYPES = [
 ];
 
 export function TopBar() {
+  const { mode, setMode } = useTheme();
   const undo = useCanvasStore((s) => s.undo);
   const redo = useCanvasStore((s) => s.redo);
   const nodes = useCanvasStore((s) => s.nodes);
@@ -28,6 +30,7 @@ export function TopBar() {
   const savedWorkflows = useCanvasStore((s) => s.savedWorkflows);
   const toggleSandbox = useSimulationStore((s) => s.toggle);
   const applyAutoLayout = useCanvasStore((s) => s.applyAutoLayout);
+  const autoConnectNodes = useCanvasStore((s) => s.autoConnectNodes);
   const runValidation = useCanvasStore((s) => s.runValidation);
   const validationErrors = useCanvasStore((s) => s.validationErrors);
 
@@ -107,12 +110,18 @@ export function TopBar() {
     setShowSaveModal(false);
   };
 
+  const themeOptions: Array<{ mode: ThemeMode; label: string; icon: typeof Laptop }> = [
+    { mode: 'system', label: 'System theme', icon: Laptop },
+    { mode: 'light', label: 'Light theme', icon: Sun },
+    { mode: 'dark', label: 'Dark theme', icon: Moon },
+  ];
+
   return (
     <>
       <header className="h-[var(--toolbar-height)] border-b border-[var(--border-default)] bg-[var(--surface-primary)] flex items-center justify-between px-5 z-10 shadow-sm shrink-0">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="FlowForge Logo" className="w-7 h-7 object-contain rounded-md bg-white shadow-sm" />
+          <img src="/logo.png" alt="FlowForge Logo" className="w-7 h-7 object-contain rounded-md bg-[var(--surface-primary)] shadow-sm" />
           <span className="font-semibold text-[16px] font-heading text-[var(--color-brand-600)]">FlowForge</span>
         </div>
 
@@ -129,6 +138,19 @@ export function TopBar() {
 
         {/* Actions */}
         <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] p-0.5 mr-1">
+            {themeOptions.map(({ mode: optionMode, label, icon: Icon }) => (
+              <button
+                key={optionMode}
+                onClick={() => setMode(optionMode)}
+                title={label}
+                aria-label={label}
+                className={`p-1.5 rounded-md transition-colors cursor-pointer ${mode === optionMode ? 'bg-[var(--surface-primary)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-primary)]/70 hover:text-[var(--text-primary)]'}`}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
           <button onClick={undo} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Undo (Ctrl+Z)">
             <RotateCcw size={15} />
           </button>
@@ -160,6 +182,14 @@ export function TopBar() {
           {/* Layout & Validation */}
           <button onClick={applyAutoLayout} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Auto-layout (Horizontal)">
             <LayoutGrid size={15} />
+          </button>
+          <button
+            onClick={autoConnectNodes}
+            disabled={nodes.length < 2}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${nodes.length < 2 ? 'text-gray-300 cursor-not-allowed' : 'text-[var(--text-secondary)] hover:text-black hover:bg-gray-100'}`}
+            title="Auto-connect nodes"
+          >
+            <LinkIcon size={15} />
           </button>
           <button onClick={() => runValidation()} className={`relative p-1.5 rounded transition-colors cursor-pointer ${validationErrors.length > 0 ? 'text-red-500 hover:bg-red-50' : 'text-[var(--text-secondary)] hover:text-black hover:bg-gray-100'}`} title="Validate workflow">
             <ShieldCheck size={15} />
