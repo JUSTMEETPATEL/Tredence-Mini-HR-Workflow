@@ -88,7 +88,7 @@ export function TutorialOverlay() {
 
   const handleNext = () => {
     setDemoPlaying(true);
-    setStep(Math.floor(step) + 0.5);
+    setStepInner(Math.floor(step) + 0.5);
   };
 
   if (step === 0) return null;
@@ -319,7 +319,7 @@ function DemoCursor({ step }: { step: number }) {
   }, [step]);
 
   return (
-    <div ref={cursorRef} className="fixed top-0 left-0 z-[100] pointer-events-none will-change-transform" style={{ transform: 'translate(-1000px, -1000px)' }}>
+    <div ref={cursorRef} data-testid="tutorial-demo-cursor" className="fixed top-0 left-0 z-[100] pointer-events-none will-change-transform" style={{ transform: 'translate(-1000px, -1000px)' }}>
       <div className="relative">
         <MousePointer2 className="text-black drop-shadow-md relative z-10 fill-white" size={32} />
         {[1.5, 2.5, 6.5].includes(step) && (
