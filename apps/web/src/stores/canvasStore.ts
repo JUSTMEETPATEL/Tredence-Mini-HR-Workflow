@@ -23,10 +23,13 @@ export interface ValidationError {
   message: string;
 }
 
+export type WorkflowNameSource = 'generated' | 'manual';
+
 export interface SavedWorkflow {
   id: string;
   name: string;
   type: string;
+  nameSource: WorkflowNameSource;
   nodes: Node[];
   edges: Edge[];
   updatedAt: string;
@@ -44,6 +47,8 @@ export interface CanvasState {
   selectedNodeIds: string[];
   clipboard: ClipboardSnapshot | null;
   validationErrors: ValidationError[];
+  isDirty: boolean;
+  lastSavedAt: string | null;
 
   currentWorkflowId: string | null;
   savedWorkflows: SavedWorkflow[];
@@ -64,7 +69,9 @@ export interface CanvasState {
   applyAutoLayout: () => void;
   runValidation: () => ValidationError[];
 
-  saveWorkflow: (name: string, type: string) => void;
+  saveWorkflow: (overrides?: Partial<Pick<SavedWorkflow, 'name' | 'type' | 'nameSource'>>) => SavedWorkflow | null;
+  renameWorkflow: (id: string, name: string) => void;
+  duplicateWorkflow: (id: string) => void;
   loadWorkflow: (id: string) => void;
   createNewWorkflow: () => void;
   deleteWorkflow: (id: string) => void;
@@ -76,14 +83,106 @@ export interface CanvasState {
   redo: () => void;
 }
 
+const KEYWORD_TYPE_RULES: Array<{ type: string; keywords: string[]; label: string }> = [
+  { type: 'onboarding', label: 'Employee Onboarding Flow', keywords: ['onboard', 'new hire', 'provision', 'orientation', 'welcome'] },
+  { type: 'offboarding', label: 'Employee Offboarding Flow', keywords: ['offboard', 'exit', 'termination', 'resignation', 'deactivate'] },
+  { type: 'leave-request', label: 'Leave Request Workflow', keywords: ['leave', 'pto', 'vacation', 'time off', 'absence'] },
+  { type: 'expense', label: 'Expense Approval Workflow', keywords: ['expense', 'reimburse', 'receipt', 'payout', 'invoice'] },
+  { type: 'recruitment', label: 'Recruitment Pipeline Workflow', keywords: ['recruit', 'candidate', 'interview', 'offer', 'hiring'] },
+  { type: 'compliance', label: 'Compliance Review Workflow', keywords: ['compliance', 'audit', 'policy', 'regulation', 'attestation'] },
+];
+
+function parseSavedWorkflows(raw: string | null): SavedWorkflow[] {
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw) as Array<Partial<SavedWorkflow>>;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.map((workflow, index) => ({
+      id: workflow.id || `wf_${Date.now()}_${index}`,
+      name: workflow.name || 'Untitled Workflow',
+      type: workflow.type || 'custom',
+      nameSource: workflow.nameSource === 'manual' ? 'manual' : 'generated',
+      nodes: Array.isArray(workflow.nodes) ? workflow.nodes as Node[] : [],
+      edges: Array.isArray(workflow.edges) ? workflow.edges as Edge[] : [],
+      updatedAt: workflow.updatedAt || new Date().toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function extractWorkflowText(nodes: Node[]): string {
+  return nodes
+    .flatMap((node) => {
+      const data = node.data as Record<string, unknown>;
+      return [data.title, data.endMessage, data.description, data.assignee, data.approverRole];
+    })
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .toLowerCase();
+}
+
+function sentenceCase(text: string): string {
+  return text
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function inferWorkflowType(nodes: Node[]): string {
+  const haystack = extractWorkflowText(nodes);
+  const keywordMatch = KEYWORD_TYPE_RULES.find((rule) => rule.keywords.some((keyword) => haystack.includes(keyword)));
+  if (keywordMatch) return keywordMatch.type;
+
+  const hasApproval = nodes.some((node) => node.type === 'approval');
+  const hasAutomation = nodes.some((node) => node.type === 'automated_step');
+  if (hasApproval && hasAutomation) return 'compliance';
+  if (hasApproval) return 'expense';
+  if (hasAutomation) return 'custom';
+  return 'custom';
+}
+
+function deriveWorkflowName(nodes: Node[], type: string): string {
+  const haystack = extractWorkflowText(nodes);
+  const keywordMatch = KEYWORD_TYPE_RULES.find((rule) => rule.type === type || rule.keywords.some((keyword) => haystack.includes(keyword)));
+  if (keywordMatch) return keywordMatch.label;
+
+  const meaningfulNode = nodes.find((node) => {
+    const data = node.data as Record<string, unknown>;
+    const label = typeof data.title === 'string' ? data.title : typeof data.endMessage === 'string' ? data.endMessage : '';
+    if (!label) return false;
+    const normalized = label.trim().toLowerCase();
+    return !['start', 'task', 'approval', 'end', 'workflow complete', 'automated step'].includes(normalized);
+  });
+
+  if (meaningfulNode) {
+    const data = meaningfulNode.data as Record<string, unknown>;
+    const rawTitle = typeof data.title === 'string' ? data.title : typeof data.endMessage === 'string' ? data.endMessage : 'Workflow';
+    return `${sentenceCase(rawTitle)} Workflow`;
+  }
+
+  const hasApproval = nodes.some((node) => node.type === 'approval');
+  const hasAutomation = nodes.some((node) => node.type === 'automated_step');
+  if (hasApproval && hasAutomation) return 'Approval and Automation Workflow';
+  if (hasApproval) return 'Approval Workflow';
+  if (hasAutomation) return 'Automated Workflow';
+  return 'HR Workflow Draft';
+}
+
+function syncSavedWorkflows(savedWorkflows: SavedWorkflow[]) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('savedWorkflows', JSON.stringify(savedWorkflows));
+  }
+}
+
 export const useCanvasStore = create<CanvasState>((set, get) => {
   // Try to load initial saved workflows from localstorage if possible.
   // Note: Since this is executed purely on the client side in most cases, we can initialize it safely.
   let initWorkflows: SavedWorkflow[] = [];
   if (typeof window !== 'undefined') {
-    try {
-      initWorkflows = JSON.parse(localStorage.getItem('savedWorkflows') || '[]');
-    } catch {}
+    initWorkflows = parseSavedWorkflows(localStorage.getItem('savedWorkflows'));
   }
 
   return {
@@ -93,6 +192,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     selectedNodeIds: [],
     clipboard: null,
     validationErrors: [],
+    isDirty: false,
+    lastSavedAt: null,
     history: [],
     historyIndex: -1,
 
@@ -105,28 +206,29 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         nodes,
         selectedNodeIds,
         selectedNodeId: selectedNodeIds.length === 1 ? selectedNodeIds[0] : null,
+        isDirty: true,
       });
     },
-    setEdges: (edges) => set({ edges }),
+    setEdges: (edges) => set({ edges, isDirty: true }),
 
     onNodesChange: (changes) => {
-      set({ nodes: applyNodeChanges(changes, get().nodes) });
+      set({ nodes: applyNodeChanges(changes, get().nodes), isDirty: true });
     },
 
     onEdgesChange: (changes) => {
-      set({ edges: applyEdgeChanges(changes, get().edges) });
+      set({ edges: applyEdgeChanges(changes, get().edges), isDirty: true });
     },
 
     onConnect: (connection) => {
       const state = get();
       state.pushHistory();
-      set({ edges: addEdge({ ...connection, type: 'smoothstep', animated: true }, state.edges) });
+      set({ edges: addEdge({ ...connection, type: 'smoothstep', animated: true }, state.edges), isDirty: true });
     },
 
     addNode: (node) => {
       const state = get();
       state.pushHistory();
-      set({ nodes: [...state.nodes, node] });
+      set({ nodes: [...state.nodes, node], isDirty: true });
     },
 
     updateNodeData: (nodeId, data) => {
@@ -150,6 +252,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           }
           return n;
         }),
+        isDirty: true,
       });
     },
 
@@ -176,6 +279,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         ),
         selectedNodeId: null,
         selectedNodeIds: [],
+        isDirty: true,
       });
     },
 
@@ -250,6 +354,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         ],
         selectedNodeIds: pastedIds,
         selectedNodeId: pastedIds.length === 1 ? pastedIds[0] : null,
+        isDirty: true,
       });
     },
 
@@ -283,14 +388,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
       if (newEdges.length === 0) return;
       state.pushHistory();
-      set({ edges: [...state.edges, ...newEdges] });
+      set({ edges: [...state.edges, ...newEdges], isDirty: true });
     },
 
     applyAutoLayout: () => {
       const state = get();
       state.pushHistory();
       const layouted = autoLayout(state.nodes, state.edges, 'LR');
-      set({ nodes: layouted });
+      set({ nodes: layouted, isDirty: true });
     },
 
     runValidation: () => {
@@ -317,12 +422,26 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       return violations;
     },
 
-    saveWorkflow: (name, type) => {
+    saveWorkflow: (overrides) => {
       const state = get();
+      if (state.nodes.length === 0) return null;
+
+      const currentWorkflow = state.savedWorkflows.find((wf) => wf.id === state.currentWorkflowId);
+      const inferredType = overrides?.type || currentWorkflow?.type || inferWorkflowType(state.nodes);
+      const nextNameSource = overrides?.nameSource
+        || (overrides?.name ? 'manual' : undefined)
+        || currentWorkflow?.nameSource
+        || 'generated';
+      const generatedName = deriveWorkflowName(state.nodes, inferredType);
+      const resolvedName = overrides?.name
+        || (currentWorkflow?.nameSource === 'manual' ? currentWorkflow?.name : undefined)
+        || generatedName;
+
       const newWorkflow: SavedWorkflow = {
         id: state.currentWorkflowId || `wf_${Date.now()}`,
-        name,
-        type,
+        name: typeof resolvedName === 'string' ? resolvedName : generatedName,
+        type: inferredType,
+        nameSource: nextNameSource,
         nodes: JSON.parse(JSON.stringify(state.nodes)),
         edges: JSON.parse(JSON.stringify(state.edges)),
         updatedAt: new Date().toISOString()
@@ -331,12 +450,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       const newWorkflows = state.currentWorkflowId 
         ? state.savedWorkflows.map(wf => wf.id === state.currentWorkflowId ? newWorkflow : wf)
         : [newWorkflow, ...state.savedWorkflows];
-        
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('savedWorkflows', JSON.stringify(newWorkflows));
-      }
+      syncSavedWorkflows(newWorkflows);
       
-      set({ savedWorkflows: newWorkflows, currentWorkflowId: newWorkflow.id });
+      set({
+        savedWorkflows: newWorkflows,
+        currentWorkflowId: newWorkflow.id,
+        isDirty: false,
+        lastSavedAt: newWorkflow.updatedAt,
+      });
 
       // Background DB Sync
       fetch(apiUrl(`/workflows/${newWorkflow.id}`), {
@@ -363,26 +484,84 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       }).catch(err => {
         console.error('[DB Sync] Failed to save workflow to backend:', err);
       });
+
+      return newWorkflow;
+    },
+
+    renameWorkflow: (id, name) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+
+      const state = get();
+      const updatedAt = new Date().toISOString();
+      const newWorkflows = state.savedWorkflows.map((workflow) =>
+        workflow.id === id
+          ? { ...workflow, name: sentenceCase(trimmed), nameSource: 'manual' as WorkflowNameSource, updatedAt }
+          : workflow
+      );
+      syncSavedWorkflows(newWorkflows);
+      set({
+        savedWorkflows: newWorkflows,
+        lastSavedAt: state.currentWorkflowId === id ? updatedAt : state.lastSavedAt,
+      });
+    },
+
+    duplicateWorkflow: (id) => {
+      const state = get();
+      const workflow = state.savedWorkflows.find((item) => item.id === id);
+      if (!workflow) return;
+
+      const duplicated: SavedWorkflow = {
+        ...JSON.parse(JSON.stringify(workflow)),
+        id: `wf_${Date.now()}`,
+        name: `${workflow.name} Copy`,
+        nameSource: 'manual',
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newWorkflows = [duplicated, ...state.savedWorkflows];
+      syncSavedWorkflows(newWorkflows);
+      set({ savedWorkflows: newWorkflows });
     },
 
     loadWorkflow: (id) => {
       const state = get();
       const wf = state.savedWorkflows.find(w => w.id === id);
       if (wf) {
-        set({ nodes: wf.nodes, edges: wf.edges, currentWorkflowId: wf.id, history: [], historyIndex: -1, selectedNodeId: null, selectedNodeIds: [], validationErrors: [] });
+        set({
+          nodes: wf.nodes,
+          edges: wf.edges,
+          currentWorkflowId: wf.id,
+          history: [],
+          historyIndex: -1,
+          selectedNodeId: null,
+          selectedNodeIds: [],
+          validationErrors: [],
+          isDirty: false,
+          lastSavedAt: wf.updatedAt,
+        });
       }
     },
 
     createNewWorkflow: () => {
-      set({ nodes: [], edges: [], currentWorkflowId: null, history: [], historyIndex: -1, selectedNodeId: null, selectedNodeIds: [], validationErrors: [] });
+      set({
+        nodes: [],
+        edges: [],
+        currentWorkflowId: null,
+        history: [],
+        historyIndex: -1,
+        selectedNodeId: null,
+        selectedNodeIds: [],
+        validationErrors: [],
+        isDirty: false,
+        lastSavedAt: null,
+      });
     },
 
     deleteWorkflow: (id) => {
       const state = get();
       const newWorkflows = state.savedWorkflows.filter(wf => wf.id !== id);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('savedWorkflows', JSON.stringify(newWorkflows));
-      }
+      syncSavedWorkflows(newWorkflows);
       set({ savedWorkflows: newWorkflows });
       if (state.currentWorkflowId === id) {
         get().createNewWorkflow();
@@ -408,6 +587,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         nodes: JSON.parse(JSON.stringify(prev.nodes)),
         edges: JSON.parse(JSON.stringify(prev.edges)),
         historyIndex: historyIndex - 1,
+        isDirty: true,
       });
     },
 
@@ -419,6 +599,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         nodes: JSON.parse(JSON.stringify(next.nodes)),
         edges: JSON.parse(JSON.stringify(next.edges)),
         historyIndex: historyIndex + 1,
+        isDirty: true,
       });
     },
   };

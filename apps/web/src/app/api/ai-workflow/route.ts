@@ -16,6 +16,7 @@ AVAILABLE NODE TYPES:
 - "start": Beginning of workflow. Data: { title: string }
 - "task": Manual human task. Data: { title: string, description?: string, assignee?: string, dueDate?: string }
 - "approval": Requires someone to approve/reject. Data: { title: string, approver?: string }
+- "decision": Branches the workflow based on a condition. Data: { title: string, condition: string, trueLabel?: string, falseLabel?: string }
 - "automated_step": Automatic system action (API call, email, etc). Data: { title: string, actionType?: string, endpointUrl?: string }
 - "end": End of workflow. Data: { title: string }
 
@@ -24,6 +25,9 @@ BEHAVIOR RULES:
 2. Ask a MAXIMUM of 3 questions at a time. Each question should have 2-5 options. One option can be "Other" with allowCustom: true.
 3. When you have enough context, generate the full workflow.
 4. Always generate realistic, practical HR workflows.
+5. Use "decision" nodes whenever the process branches on a rule, eligibility check, policy threshold, or yes/no condition.
+6. Use "approval" nodes only for human approval steps. Do not use approval nodes as a generic branching node.
+7. For "decision" nodes, always include a concrete "condition" string and prefer trueLabel/falseLabel values such as "Eligible"/"Not eligible", "Yes"/"No", or similarly specific outcomes.
 
 YOU MUST RESPOND WITH VALID JSON ONLY. No markdown, no code fences, no explanation outside the JSON.
 
@@ -53,10 +57,14 @@ RESPONSE FORMAT (workflow):
     "name": "Workflow Name",
     "nodes": [
       { "id": "n1", "type": "start", "position": { "x": 300, "y": 50 }, "data": { "title": "Start" } },
-      { "id": "n2", "type": "task", "position": { "x": 300, "y": 170 }, "data": { "title": "Do Something", "assignee": "HR Manager" } }
+      { "id": "n2", "type": "decision", "position": { "x": 300, "y": 170 }, "data": { "title": "Check eligibility", "condition": "Does the employee meet the policy?", "trueLabel": "Yes", "falseLabel": "No" } },
+      { "id": "n3", "type": "task", "position": { "x": 50, "y": 290 }, "data": { "title": "Proceed with process", "assignee": "HR Manager" } },
+      { "id": "n4", "type": "end", "position": { "x": 550, "y": 290 }, "data": { "title": "Request closed" } }
     ],
     "edges": [
-      { "id": "e1-2", "source": "n1", "target": "n2" }
+      { "id": "e1-2", "source": "n1", "target": "n2" },
+      { "id": "e2-3", "source": "n2", "sourceHandle": "true", "target": "n3" },
+      { "id": "e2-4", "source": "n2", "sourceHandle": "false", "target": "n4" }
     ]
   }
 }
@@ -166,4 +174,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

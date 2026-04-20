@@ -21,6 +21,7 @@ const TYPE_COLORS: Record<string, string> = {
   start: 'bg-teal-100 text-teal-700',
   task: 'bg-blue-100 text-blue-700',
   approval: 'bg-purple-100 text-purple-700',
+  decision: 'bg-teal-100 text-teal-700',
   automated_step: 'bg-amber-100 text-amber-700',
   end: 'bg-red-100 text-red-700',
 };

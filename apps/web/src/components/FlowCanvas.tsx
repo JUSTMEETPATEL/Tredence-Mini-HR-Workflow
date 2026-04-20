@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -18,10 +18,21 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { StartNode } from './nodes/StartNode';
 import { TaskNode } from './nodes/TaskNode';
 import { ApprovalNode } from './nodes/ApprovalNode';
+import { DecisionNode } from './nodes/DecisionNode';
 import { AutomatedStepNode } from './nodes/AutomatedStepNode';
 import { EndNode } from './nodes/EndNode';
+import { MoveRight, MousePointer2, ScanSearch } from 'lucide-react';
 
 let nodeIdCounter = 0;
+
+const NODE_TYPES = {
+  start: StartNode,
+  task: TaskNode,
+  approval: ApprovalNode,
+  decision: DecisionNode,
+  automated_step: AutomatedStepNode,
+  end: EndNode,
+};
 
 export function FlowCanvas() {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -37,14 +48,6 @@ export function FlowCanvas() {
   const deleteSelected = useCanvasStore((s) => s.deleteSelected);
   const copySelected = useCanvasStore((s) => s.copySelected);
   const pasteClipboard = useCanvasStore((s) => s.pasteClipboard);
-
-  const nodeTypes = useMemo(() => ({
-    start: StartNode,
-    task: TaskNode,
-    approval: ApprovalNode,
-    automated_step: AutomatedStepNode,
-    end: EndNode,
-  }), []);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     selectNode(node.id);
@@ -64,6 +67,7 @@ export function FlowCanvas() {
       case 'start': return '#3B82F6';
       case 'task': return '#F97316';
       case 'approval': return '#8B5CF6';
+      case 'decision': return '#0EA5A4';
       case 'automated_step': return '#EC4899';
       case 'end': return '#EF4444';
       default: return '#E4E4E7';
@@ -146,6 +150,11 @@ export function FlowCanvas() {
     if (type === 'approval') {
       defaultData.approverRole = 'Manager';
     }
+    if (type === 'decision') {
+      defaultData.condition = 'Does this request meet the rule?';
+      defaultData.trueLabel = 'Yes';
+      defaultData.falseLabel = 'No';
+    }
     if (type === 'end') {
       defaultData.endMessage = 'Workflow Complete';
       defaultData.summaryFlag = false;
@@ -161,6 +170,43 @@ export function FlowCanvas() {
 
   return (
     <div ref={reactFlowWrapper} className="w-full h-full" onKeyDown={onKeyDown} tabIndex={0}>
+      {nodes.length === 0 && (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[5] w-[420px] -translate-x-1/2 -translate-y-1/2">
+          <div className="panel-card px-6 py-5 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-secondary)] text-[var(--color-brand-500)]">
+              <ScanSearch size={20} />
+            </div>
+            <h2 className="mt-4 text-base font-semibold text-[var(--text-primary)]">Start your workflow on the canvas</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Drag a Start node from the palette, then add tasks and approvals as the process expands.
+            </p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-left">
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-3">
+                <p className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
+                  <MousePointer2 size={13} className="text-[var(--color-brand-500)]" />
+                  Multi-select
+                </p>
+                <p className="mt-1 text-[11px] text-[var(--text-tertiary)]">Click and drag on empty space.</p>
+              </div>
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-3">
+                <p className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
+                  <MoveRight size={13} className="text-[var(--color-brand-500)]" />
+                  Connect
+                </p>
+                <p className="mt-1 text-[11px] text-[var(--text-tertiary)]">Drag between node handles to create flow.</p>
+              </div>
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-3">
+                <p className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
+                  <ScanSearch size={13} className="text-[var(--color-brand-500)]" />
+                  Navigate
+                </p>
+                <p className="mt-1 text-[11px] text-[var(--text-tertiary)]">Use two-finger pan to move around.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -174,7 +220,7 @@ export function FlowCanvas() {
         onSelectionChange={onSelectionChange}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        nodeTypes={nodeTypes}
+        nodeTypes={NODE_TYPES}
         selectionOnDrag
         selectionMode={SelectionMode.Partial}
         panOnDrag={false}
@@ -193,7 +239,7 @@ export function FlowCanvas() {
           onNodeClick={onMiniMapNodeClick}
           pannable
           zoomable
-          className="!bg-white !border !border-gray-200 !rounded-lg !shadow-sm"
+          className="!bg-[var(--surface-panel)] !border !border-[var(--border-default)] !rounded-2xl"
         />
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--canvas-dot-color)" />
       </ReactFlow>

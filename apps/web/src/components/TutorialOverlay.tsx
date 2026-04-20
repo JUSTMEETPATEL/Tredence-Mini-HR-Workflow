@@ -116,6 +116,7 @@ export function TutorialOverlay() {
 
 function TutorialDialog({ step, demoPlaying, onNext, onSkip }: { step: number, demoPlaying: boolean, onNext: () => void, onSkip: () => void }) {
   const [pos, setPos] = useState({ top: 0, left: 0, show: false, align: "right" });
+  const totalSteps = 9;
   
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -206,22 +207,33 @@ function TutorialDialog({ step, demoPlaying, onNext, onSkip }: { step: number, d
 
   return (
     <div 
-      className="absolute bg-white shadow-2xl border border-[var(--border-default)] p-5 rounded-xl w-[320px] pointer-events-auto transition-all duration-300"
+      className="panel-card absolute w-[340px] p-5 pointer-events-auto transition-all duration-300"
       style={{ top: pos.top, left: pos.left }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-bold text-[var(--color-brand-500)] text-sm">{title}</h3>
-        <button onClick={onSkip} className="text-gray-400 hover:text-gray-600" title="Skip Tutorial"><X size={16} /></button>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-secondary)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+            {Math.min(Math.floor(step), totalSteps)} / {totalSteps}
+          </div>
+          <h3 className="font-bold text-[var(--color-brand-500)] text-sm">{title}</h3>
+        </div>
+        <button onClick={onSkip} className="interactive-subtle rounded-lg p-1" title="Skip Tutorial"><X size={16} /></button>
       </div>
       <p className="text-sm text-[var(--text-secondary)] mb-4">{text}</p>
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[var(--surface-secondary)]">
+        <div
+          className="h-full rounded-full bg-[var(--color-brand-500)] transition-all duration-300"
+          style={{ width: `${(Math.min(Math.floor(step), totalSteps) / totalSteps) * 100}%` }}
+        />
+      </div>
       {step !== 9 ? (
         <div className="flex justify-end gap-2">
-          <button onClick={onSkip} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">Skip</button>
-          <button onClick={onNext} className="px-3 py-1.5 text-xs bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] transition-colors shadow-sm cursor-pointer">Next</button>
+          <button onClick={onSkip} className="interactive-subtle rounded-xl px-3 py-1.5 text-xs font-medium cursor-pointer">Skip</button>
+          <button onClick={onNext} className="rounded-xl bg-[var(--color-brand-500)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-brand-600)] transition-colors shadow-sm cursor-pointer">Next</button>
         </div>
       ) : (
         <div className="flex justify-end gap-2">
-          <button onClick={onSkip} className="px-3 py-1.5 text-xs bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] transition-colors shadow-sm cursor-pointer">Got it</button>
+          <button onClick={onSkip} className="rounded-xl bg-[var(--color-brand-500)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-brand-600)] transition-colors shadow-sm cursor-pointer">Got it</button>
         </div>
       )}
     </div>

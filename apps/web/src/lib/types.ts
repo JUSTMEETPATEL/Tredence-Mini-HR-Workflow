@@ -5,6 +5,7 @@ export type NodeType =
   | 'start'
   | 'task'
   | 'approval'
+  | 'decision'
   | 'automated_step'
   | 'end';
 
@@ -29,6 +30,13 @@ export interface ApprovalNodeData {
   autoApproveThresholdDays?: number;
 }
 
+export interface DecisionNodeData {
+  title: string;
+  condition: string;
+  trueLabel?: string;
+  falseLabel?: string;
+}
+
 export interface AutomatedStepNodeData {
   title: string;
   actionId: string;
@@ -44,6 +52,7 @@ export type WorkflowNodeData =
   | StartNodeData
   | TaskNodeData
   | ApprovalNodeData
+  | DecisionNodeData
   | AutomatedStepNodeData
   | EndNodeData;
 

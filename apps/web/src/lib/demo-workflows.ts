@@ -5,6 +5,7 @@ const demoWorkflow1: SavedWorkflow = {
   id: 'demo-1-simple',
   name: 'Simple Task Flow',
   type: 'demo',
+  nameSource: 'manual',
   updatedAt: new Date().toISOString(),
   nodes: [
     { id: 'n1', type: 'start', position: { x: 250, y: 50 }, data: { title: 'Initiate Request' } },
@@ -21,6 +22,7 @@ const demoWorkflow2: SavedWorkflow = {
   id: 'demo-2-onboarding',
   name: 'Employee Onboarding Automation',
   type: 'demo',
+  nameSource: 'manual',
   updatedAt: new Date().toISOString(),
   nodes: [
     { id: 'n1', type: 'start', position: { x: 400, y: 50 }, data: { title: 'New Hire Added' } },
@@ -43,6 +45,7 @@ const demoWorkflow3: SavedWorkflow = {
   id: 'demo-3-complex',
   name: 'Complex Expense Approval',
   type: 'demo',
+  nameSource: 'manual',
   updatedAt: new Date().toISOString(),
   nodes: [
     { id: 'n1', type: 'start', position: { x: 300, y: 50 }, data: { title: 'Submit Expense Report' } },

@@ -36,4 +36,29 @@ test.describe('HR Workflow Designer — Canvas editing', () => {
 
     await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   });
+
+  test('autosaves drafts and lets the user rename from workflow actions', async ({ page }) => {
+    await addNode(page, 'start', 260, 180);
+
+    await page.waitForFunction(() => {
+      const raw = localStorage.getItem('savedWorkflows');
+      if (!raw) return false;
+      const workflows = JSON.parse(raw);
+      return Array.isArray(workflows) && workflows.length === 1 && typeof workflows[0]?.name === 'string' && workflows[0].name.length > 0;
+    });
+
+    await page.getByRole('banner').getByRole('button', { name: 'Workflow actions' }).click();
+    await page.getByText('Rename').click();
+    await page.locator('input').fill('Payroll Cycle Flow');
+    await page.getByRole('button', { name: 'Rename' }).click();
+
+    await expect(page.getByRole('banner').getByText('Payroll Cycle Flow')).toBeVisible();
+
+    await page.waitForFunction(() => {
+      const raw = localStorage.getItem('savedWorkflows');
+      if (!raw) return false;
+      const workflows = JSON.parse(raw);
+      return workflows[0]?.name === 'Payroll Cycle Flow' && workflows[0]?.nameSource === 'manual';
+    });
+  });
 });

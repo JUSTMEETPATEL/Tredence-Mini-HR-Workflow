@@ -201,6 +201,7 @@ function getStepMessage(type: string, title: string): string {
     case 'start':          return `Workflow initiated: ${title}`;
     case 'task':           return `Task "${title}" completed`;
     case 'approval':       return `Approval "${title}" granted`;
+    case 'decision':       return `Decision "${title}" evaluated`;
     case 'automated_step': return `Automated action "${title}" executed`;
     case 'end':            return `Workflow completed: ${title}`;
     default:               return `Step "${title}" processed`;

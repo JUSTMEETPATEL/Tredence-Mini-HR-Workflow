@@ -1,22 +1,131 @@
 "use client";
 
-import { useState } from "react";
-import { RotateCcw, RotateCw, Play, Upload, Download, LayoutGrid, ShieldCheck, Save, X, Link as LinkIcon, Sun, Moon, Laptop } from "lucide-react";
-import { useCanvasStore } from '@/stores/canvasStore';
-import { useSimulationStore } from '@/stores/simulationStore';
-import { serializeWorkflow, deserializeWorkflow } from '@/lib/workflow-engine';
-import type { WorkflowNode, WorkflowEdge } from '@/lib/types';
-import { useTheme, type ThemeMode } from './providers/ThemeProvider';
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import {
+  RotateCcw,
+  RotateCw,
+  Play,
+  Upload,
+  Download,
+  LayoutGrid,
+  ShieldCheck,
+  Save,
+  Link as LinkIcon,
+  Sun,
+  Moon,
+  Laptop,
+  CircleDot,
+  MoreHorizontal,
+  Pencil,
+  Copy,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useCanvasStore } from "@/stores/canvasStore";
+import { useSimulationStore } from "@/stores/simulationStore";
+import { serializeWorkflow, deserializeWorkflow } from "@/lib/workflow-engine";
+import type { WorkflowNode, WorkflowEdge } from "@/lib/types";
+import { useTheme, type ThemeMode } from "./providers/ThemeProvider";
 
-const WORKFLOW_TYPES = [
-  { value: 'onboarding', label: 'Onboarding' },
-  { value: 'offboarding', label: 'Offboarding' },
-  { value: 'leave-request', label: 'Leave Request' },
-  { value: 'expense', label: 'Expense Approval' },
-  { value: 'recruitment', label: 'Recruitment' },
-  { value: 'compliance', label: 'Compliance' },
-  { value: 'custom', label: 'Custom' },
-];
+function ToolButton({
+  onClick,
+  title,
+  children,
+  disabled = false,
+}: {
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      disabled={disabled}
+      className={`h-9 w-9 rounded-xl flex items-center justify-center interactive-subtle ${
+        disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ToolbarGroup({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-1.5 py-1">
+      {children}
+    </div>
+  );
+}
+
+function formatSavedStatus(isDirty: boolean, lastSavedAt: string | null) {
+  if (isDirty) return "Saving changes...";
+  if (!lastSavedAt) return "Autosave ready";
+
+  const diffSeconds = Math.max(0, Math.round((Date.now() - new Date(lastSavedAt).getTime()) / 1000));
+  if (diffSeconds < 5) return "Autosaved just now";
+  if (diffSeconds < 60) return `Autosaved ${diffSeconds}s ago`;
+  if (diffSeconds < 3600) return `Autosaved ${Math.round(diffSeconds / 60)}m ago`;
+  return `Autosaved ${Math.round(diffSeconds / 3600)}h ago`;
+}
+
+function RenameWorkflowModal({
+  initialName,
+  onClose,
+  onSubmit,
+}: {
+  initialName: string;
+  onClose: () => void;
+  onSubmit: (name: string) => void;
+}) {
+  const [name, setName] = useState(initialName);
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[var(--overlay-backdrop)] backdrop-blur-sm" onClick={onClose}>
+      <div className="panel-card w-[400px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[var(--border-default)] px-5 py-4">
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+              <Pencil size={15} />
+              Rename Workflow
+            </h3>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">Manual names override the generated draft name.</p>
+          </div>
+          <button onClick={onClose} className="interactive-subtle rounded-lg p-1.5 cursor-pointer">
+            <X size={14} />
+          </button>
+        </div>
+        <div className="px-5 py-4">
+          <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">Workflow Name</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && name.trim()) onSubmit(name);
+            }}
+          />
+        </div>
+        <div className="flex justify-end gap-2 border-t border-[var(--border-default)] bg-[var(--surface-secondary)] px-5 py-4">
+          <button onClick={onClose} className="interactive-subtle rounded-xl px-4 py-2 text-xs font-medium cursor-pointer">
+            Cancel
+          </button>
+          <button
+            onClick={() => onSubmit(name)}
+            disabled={!name.trim()}
+            className="rounded-xl bg-[var(--color-brand-500)] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-brand-600)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+          >
+            Rename
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function TopBar() {
   const { mode, setMode } = useTheme();
@@ -24,48 +133,92 @@ export function TopBar() {
   const redo = useCanvasStore((s) => s.redo);
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
+  const selectedNodeIds = useCanvasStore((s) => s.selectedNodeIds);
   const setNodes = useCanvasStore((s) => s.setNodes);
   const setEdges = useCanvasStore((s) => s.setEdges);
   const currentWorkflowId = useCanvasStore((s) => s.currentWorkflowId);
   const savedWorkflows = useCanvasStore((s) => s.savedWorkflows);
+  const saveWorkflow = useCanvasStore((s) => s.saveWorkflow);
+  const renameWorkflow = useCanvasStore((s) => s.renameWorkflow);
+  const duplicateWorkflow = useCanvasStore((s) => s.duplicateWorkflow);
+  const deleteWorkflow = useCanvasStore((s) => s.deleteWorkflow);
+  const isDirty = useCanvasStore((s) => s.isDirty);
+  const lastSavedAt = useCanvasStore((s) => s.lastSavedAt);
   const toggleSandbox = useSimulationStore((s) => s.toggle);
   const applyAutoLayout = useCanvasStore((s) => s.applyAutoLayout);
   const autoConnectNodes = useCanvasStore((s) => s.autoConnectNodes);
   const runValidation = useCanvasStore((s) => s.runValidation);
   const validationErrors = useCanvasStore((s) => s.validationErrors);
 
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveName, setSaveName] = useState('');
-  const [saveType, setSaveType] = useState('custom');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const autosaveTimerRef = useRef<number | null>(null);
 
-  // Find current workflow name for display
-  const currentWf = savedWorkflows.find(wf => wf.id === currentWorkflowId);
-  const displayTitle = currentWf?.name || (nodes.length > 0 ? 'Unsaved Workflow' : 'HR Workflow Designer');
+  const currentWf = savedWorkflows.find((wf) => wf.id === currentWorkflowId);
+  const displayTitle = currentWf?.name || (nodes.length > 0 ? "Draft workflow" : "HR Workflow Designer");
+  const workflowLabel = currentWf?.type ? currentWf.type.replace("-", " ") : "Draft";
+  const saveStatus = formatSavedStatus(isDirty, lastSavedAt);
+
+  const themeOptions: Array<{ mode: ThemeMode; label: string; icon: typeof Laptop }> = [
+    { mode: "system", label: "System theme", icon: Laptop },
+    { mode: "light", label: "Light theme", icon: Sun },
+    { mode: "dark", label: "Dark theme", icon: Moon },
+  ];
+
+  const workflowStats = useMemo(
+    () => [
+      `${nodes.length} node${nodes.length === 1 ? "" : "s"}`,
+      `${edges.length} connection${edges.length === 1 ? "" : "s"}`,
+      selectedNodeIds.length > 0 ? `${selectedNodeIds.length} selected` : saveStatus,
+    ],
+    [edges.length, nodes.length, saveStatus, selectedNodeIds.length]
+  );
+
+  useEffect(() => {
+    if (nodes.length === 0 || !isDirty) return;
+
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = window.setTimeout(() => {
+      saveWorkflow();
+      autosaveTimerRef.current = null;
+    }, 900);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [edges, isDirty, nodes, saveWorkflow]);
 
   const handleExport = () => {
     const wfNodes: WorkflowNode[] = nodes.map((n) => ({
       id: n.id,
-      type: (n.type || 'task') as WorkflowNode['type'],
+      type: (n.type || "task") as WorkflowNode["type"],
       position: n.position,
-      data: n.data as unknown as WorkflowNode['data'],
+      data: n.data as unknown as WorkflowNode["data"],
     }));
     const wfEdges: WorkflowEdge[] = edges.map((e) => ({
-      id: e.id, source: e.source, target: e.target,
+      id: e.id,
+      source: e.source,
+      target: e.target,
     }));
     const json = serializeWorkflow(wfNodes, wfEdges, displayTitle);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${displayTitle.replace(/\s+/g, '-').toLowerCase()}.json`;
+    a.download = `${displayTitle.replace(/\s+/g, "-").toLowerCase()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -73,17 +226,23 @@ export function TopBar() {
       reader.onload = () => {
         try {
           const { nodes: wfNodes, edges: wfEdges } = deserializeWorkflow(reader.result as string);
-          setNodes(wfNodes.map((n) => ({
-            id: n.id,
-            type: n.type,
-            position: n.position,
-            data: n.data as unknown as Record<string, unknown>,
-          })));
-          setEdges(wfEdges.map((e) => ({
-            id: e.id, source: e.source, target: e.target,
-          })));
+          setNodes(
+            wfNodes.map((n) => ({
+              id: n.id,
+              type: n.type,
+              position: n.position,
+              data: n.data as unknown as Record<string, unknown>,
+            }))
+          );
+          setEdges(
+            wfEdges.map((e) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+            }))
+          );
         } catch {
-          alert('Invalid workflow JSON file');
+          alert("Invalid workflow JSON file");
         }
       };
       reader.readAsText(file);
@@ -91,165 +250,181 @@ export function TopBar() {
     input.click();
   };
 
-  const handleSaveClick = () => {
-    if (nodes.length === 0) return;
-    // If already named, just re-save
-    if (currentWorkflowId && currentWf) {
-      useCanvasStore.getState().saveWorkflow(currentWf.name, currentWf.type);
-    } else {
-      setSaveName('');
-      setSaveType('custom');
-      setShowSaveModal(true);
-    }
-  };
-
-  const handleSaveSubmit = () => {
-    const trimmed = saveName.trim();
-    if (!trimmed) return;
-    useCanvasStore.getState().saveWorkflow(trimmed, saveType);
-    setShowSaveModal(false);
-  };
-
-  const themeOptions: Array<{ mode: ThemeMode; label: string; icon: typeof Laptop }> = [
-    { mode: 'system', label: 'System theme', icon: Laptop },
-    { mode: 'light', label: 'Light theme', icon: Sun },
-    { mode: 'dark', label: 'Dark theme', icon: Moon },
-  ];
-
   return (
     <>
-      <header className="h-[var(--toolbar-height)] border-b border-[var(--border-default)] bg-[var(--surface-primary)] flex items-center justify-between px-5 z-10 shadow-sm shrink-0">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="FlowForge Logo" className="w-7 h-7 object-contain rounded-md bg-[var(--surface-primary)] shadow-sm" />
-          <span className="font-semibold text-[16px] font-heading text-[var(--color-brand-600)]">FlowForge</span>
-        </div>
+      <header className="h-[var(--toolbar-height)] border-b border-[var(--border-default)] bg-[var(--surface-primary)] px-5 z-10 shrink-0">
+        <div className="flex h-full items-center justify-between gap-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="FlowForge Logo"
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-xl object-contain border border-[var(--border-default)] bg-[var(--surface-secondary)] p-1 shadow-sm"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-semibold text-[var(--text-primary)]">FlowForge</span>
+                  <span className="status-chip rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase">
+                    {workflowLabel}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="truncate text-sm font-medium text-[var(--text-primary)]">{displayTitle}</span>
+                  {nodes.length > 0 ? (
+                    <span className={`inline-flex items-center gap-1 text-[11px] ${isDirty ? "text-amber-600" : "text-emerald-600"}`}>
+                      <CircleDot size={10} />
+                      {saveStatus}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-[var(--text-tertiary)]">Start by dragging a node onto the canvas</span>
+                  )}
+                  {currentWf && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setMenuOpen((open) => !open)}
+                        className="interactive-subtle rounded-lg p-1.5 cursor-pointer"
+                        title="Workflow actions"
+                      >
+                        <MoreHorizontal size={15} />
+                      </button>
+                      {menuOpen && (
+                        <div className="absolute left-0 top-9 z-[80] w-44 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] p-1.5 shadow-xl">
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setRenameOpen(true);
+                            }}
+                            className="interactive-subtle flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs cursor-pointer"
+                          >
+                            <Pencil size={13} />
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => {
+                              duplicateWorkflow(currentWf.id);
+                              setMenuOpen(false);
+                            }}
+                            className="interactive-subtle flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs cursor-pointer"
+                          >
+                            <Copy size={13} />
+                            Duplicate
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete "${currentWf.name}"?`)) {
+                                deleteWorkflow(currentWf.id);
+                              }
+                              setMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-        {/* Title — shows current workflow name */}
-        <div className="flex flex-col items-center">
-          <span className="text-sm font-medium">{displayTitle}</span>
-          <span className="text-[11px] text-[var(--text-tertiary)]">
-            {nodes.length > 0 
-              ? `${nodes.length} node${nodes.length !== 1 ? 's' : ''} • ${edges.length} connection${edges.length !== 1 ? 's' : ''}`
-              : 'Drag nodes from sidebar to begin'
-            }
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] p-0.5 mr-1">
-            {themeOptions.map(({ mode: optionMode, label, icon: Icon }) => (
-              <button
-                key={optionMode}
-                onClick={() => setMode(optionMode)}
-                title={label}
-                aria-label={label}
-                className={`p-1.5 rounded-md transition-colors cursor-pointer ${mode === optionMode ? 'bg-[var(--surface-primary)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-primary)]/70 hover:text-[var(--text-primary)]'}`}
-              >
-                <Icon size={15} />
-              </button>
-            ))}
+            <div className="hidden lg:flex items-center gap-2">
+              {workflowStats.map((stat) => (
+                <span key={stat} className="status-chip rounded-full px-2.5 py-1 text-[11px] font-medium metric-value">
+                  {stat}
+                </span>
+              ))}
+            </div>
           </div>
-          <button onClick={undo} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Undo (Ctrl+Z)">
-            <RotateCcw size={15} />
-          </button>
-          <button onClick={redo} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Redo (Ctrl+Shift+Z)">
-            <RotateCw size={15} />
-          </button>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
 
-          {/* Save */}
-          <button 
-            onClick={handleSaveClick} 
-            disabled={nodes.length === 0}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${nodes.length === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] hover:bg-[var(--color-brand-50)]'}`}
-            title={currentWorkflowId ? 'Save Changes' : 'Save Workflow'}
-          >
-            <Save size={15} />
-          </button>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
+          <div className="flex items-center gap-2">
+            <ToolbarGroup>
+              {themeOptions.map(({ mode: optionMode, label, icon: Icon }) => (
+                <button
+                  key={optionMode}
+                  onClick={() => setMode(optionMode)}
+                  title={label}
+                  aria-label={label}
+                  className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+                    mode === optionMode ? "bg-[var(--surface-primary)] text-[var(--text-primary)] shadow-sm" : "interactive-subtle"
+                  }`}
+                >
+                  <Icon size={15} />
+                </button>
+              ))}
+            </ToolbarGroup>
 
-          {/* Import / Export */}
-          <button onClick={handleImport} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Import JSON File">
-            <Upload size={15} />
-          </button>
-          <button onClick={handleExport} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Export JSON File">
-            <Download size={15} />
-          </button>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
+            <ToolbarGroup>
+              <ToolButton onClick={undo} title="Undo (Ctrl+Z)">
+                <RotateCcw size={15} />
+              </ToolButton>
+              <ToolButton onClick={redo} title="Redo (Ctrl+Shift+Z)">
+                <RotateCw size={15} />
+              </ToolButton>
+            </ToolbarGroup>
 
-          {/* Layout & Validation */}
-          <button onClick={applyAutoLayout} className="p-1.5 text-[var(--text-secondary)] hover:text-black hover:bg-gray-100 rounded transition-colors cursor-pointer" title="Auto-layout (Horizontal)">
-            <LayoutGrid size={15} />
-          </button>
-          <button
-            onClick={autoConnectNodes}
-            disabled={nodes.length < 2}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${nodes.length < 2 ? 'text-gray-300 cursor-not-allowed' : 'text-[var(--text-secondary)] hover:text-black hover:bg-gray-100'}`}
-            title="Auto-connect nodes"
-          >
-            <LinkIcon size={15} />
-          </button>
-          <button onClick={() => runValidation()} className={`relative p-1.5 rounded transition-colors cursor-pointer ${validationErrors.length > 0 ? 'text-red-500 hover:bg-red-50' : 'text-[var(--text-secondary)] hover:text-black hover:bg-gray-100'}`} title="Validate workflow">
-            <ShieldCheck size={15} />
-            {validationErrors.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">{validationErrors.length}</span>
-            )}
-          </button>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
+            <ToolbarGroup>
+              <ToolButton onClick={() => saveWorkflow()} title="Save now" disabled={nodes.length === 0}>
+                <Save size={15} />
+              </ToolButton>
+              <ToolButton onClick={handleImport} title="Import JSON File">
+                <Upload size={15} />
+              </ToolButton>
+              <ToolButton onClick={handleExport} title="Export JSON File">
+                <Download size={15} />
+              </ToolButton>
+            </ToolbarGroup>
 
-          {/* Simulate */}
-          <button onClick={toggleSandbox} data-tutorial="tutorial-simulate-btn" className="flex items-center gap-1.5 text-xs font-medium bg-[var(--color-brand-500)] text-white px-3 py-1.5 rounded-md hover:bg-[var(--color-brand-600)] transition-all shadow-sm hover:shadow cursor-pointer">
-            <Play size={13} fill="currentColor" />
-            Simulate
-          </button>
+            <ToolbarGroup>
+              <ToolButton onClick={applyAutoLayout} title="Auto-layout (Horizontal)">
+                <LayoutGrid size={15} />
+              </ToolButton>
+              <ToolButton onClick={autoConnectNodes} title="Auto-connect nodes" disabled={nodes.length < 2}>
+                <LinkIcon size={15} />
+              </ToolButton>
+              <ToolButton
+                onClick={() => runValidation()}
+                title={
+                  validationErrors.length > 0
+                    ? `${validationErrors.length} validation issue${validationErrors.length === 1 ? "" : "s"}`
+                    : "Validate workflow"
+                }
+              >
+                <div className="relative">
+                  <ShieldCheck size={15} className={validationErrors.length > 0 ? "text-red-500" : undefined} />
+                  {validationErrors.length > 0 && (
+                    <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white metric-value">
+                      {validationErrors.length}
+                    </span>
+                  )}
+                </div>
+              </ToolButton>
+            </ToolbarGroup>
+
+            <button
+              onClick={toggleSandbox}
+              data-tutorial="tutorial-simulate-btn"
+              className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-brand-500)] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--color-brand-600)] cursor-pointer"
+            >
+              <Play size={14} fill="currentColor" />
+              Simulate
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Quick-save modal */}
-      {showSaveModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center" onClick={() => setShowSaveModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-[380px] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2"><Save size={15} /> Save Workflow</h3>
-              <button onClick={() => setShowSaveModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"><X size={14} /></button>
-            </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1">Workflow Name *</label>
-                <input
-                  value={saveName}
-                  onChange={e => setSaveName(e.target.value)}
-                  placeholder="e.g. Employee Onboarding v2"
-                  autoFocus
-                  className="w-full text-sm border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
-                  onKeyDown={e => { if (e.key === 'Enter') handleSaveSubmit(); }}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1">Workflow Type</label>
-                <select
-                  value={saveType}
-                  onChange={e => setSaveType(e.target.value)}
-                  className="w-full text-sm border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent bg-white"
-                >
-                  {WORKFLOW_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 p-4 border-t border-gray-100 bg-gray-50/50">
-              <button onClick={() => setShowSaveModal(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-md transition-colors">Cancel</button>
-              <button
-                onClick={handleSaveSubmit}
-                disabled={!saveName.trim()}
-                className="px-4 py-1.5 text-xs font-medium bg-[var(--color-brand-500)] text-white rounded-md hover:bg-[var(--color-brand-600)] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+      {renameOpen && currentWf && (
+        <RenameWorkflowModal
+          initialName={currentWf.name}
+          onClose={() => setRenameOpen(false)}
+          onSubmit={(name) => {
+            renameWorkflow(currentWf.id, name);
+            setRenameOpen(false);
+          }}
+        />
       )}
     </>
   );

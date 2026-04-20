@@ -5,14 +5,16 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { StartNodeForm } from './forms/StartNodeForm';
 import { TaskNodeForm } from './forms/TaskNodeForm';
 import { ApprovalNodeForm } from './forms/ApprovalNodeForm';
+import { DecisionNodeForm } from './forms/DecisionNodeForm';
 import { AutomatedStepNodeForm } from './forms/AutomatedStepNodeForm';
 import { EndNodeForm } from './forms/EndNodeForm';
-import { X } from 'lucide-react';
+import { X, SlidersHorizontal, MousePointerClick } from 'lucide-react';
 
 const FORM_MAP: Record<string, React.ComponentType<{ nodeId: string; data: Record<string, unknown> }>> = {
   start: StartNodeForm,
   task: TaskNodeForm,
   approval: ApprovalNodeForm,
+  decision: DecisionNodeForm,
   automated_step: AutomatedStepNodeForm,
   end: EndNodeForm,
 };
@@ -21,6 +23,7 @@ const LABELS: Record<string, string> = {
   start: 'Start Node',
   task: 'Task Node',
   approval: 'Approval Node',
+  decision: 'Decision Node',
   automated_step: 'Automated Step',
   end: 'End Node',
 };
@@ -29,6 +32,7 @@ const COLORS: Record<string, string> = {
   start: 'var(--node-start)',
   task: 'var(--node-task)',
   approval: 'var(--node-approval)',
+  decision: 'var(--node-decision)',
   automated_step: 'var(--node-automated)',
   end: 'var(--node-end)',
 };
@@ -41,8 +45,25 @@ export function NodeFormPanel() {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   if (!selectedNode) {
     return (
-      <aside className="w-[var(--right-panel-width)] bg-[var(--surface-primary)] border-l border-[var(--border-default)] h-full flex items-center justify-center shrink-0">
-        <p className="text-sm text-[var(--text-tertiary)] text-center px-4">Select a node to configure it</p>
+      <aside className="w-[var(--right-panel-width)] bg-[var(--surface-primary)] border-l border-[var(--border-default)] h-full shrink-0 p-4">
+        <div className="panel-card flex h-full flex-col items-center justify-center px-6 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-secondary)] text-[var(--color-brand-500)]">
+            <SlidersHorizontal size={20} />
+          </div>
+          <h3 className="mt-4 text-base font-semibold text-[var(--text-primary)]">Node properties</h3>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            Select a node on the canvas to edit titles, assignees, approvals, and execution settings.
+          </p>
+          <div className="mt-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3 text-left w-full">
+            <p className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
+              <MousePointerClick size={13} className="text-[var(--color-brand-500)]" />
+              Tip
+            </p>
+            <p className="mt-1 text-[11px] text-[var(--text-tertiary)]">
+              Click a single node to configure it. Multi-select is best for copy, paste, and delete actions.
+            </p>
+          </div>
+        </div>
       </aside>
     );
   }
@@ -61,11 +82,16 @@ const nodeType = selectedNode.type || 'task';
   return (
     <aside className="w-[var(--right-panel-width)] bg-[var(--surface-primary)] border-l border-[var(--border-default)] h-full flex flex-col shrink-0 overflow-y-auto">
       <div className="p-4 border-b border-[var(--border-default)] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-          <h3 className="text-sm font-semibold">{LABELS[nodeType] || 'Node'}</h3>
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">{LABELS[nodeType] || 'Node'}</h3>
+            <p className="text-[11px] text-[var(--text-tertiary)]">Configuration and recent edits</p>
+          </div>
         </div>
-        <button onClick={() => selectNode(null)} className="text-[var(--text-secondary)] hover:bg-gray-100 p-1 rounded cursor-pointer">
+        <button onClick={() => selectNode(null)} className="interactive-subtle p-1.5 rounded-xl cursor-pointer">
           <X size={16} />
         </button>
       </div>
@@ -80,7 +106,7 @@ const nodeType = selectedNode.type || 'task';
       {/* Node Version History */}
       {history && Array.isArray(history) && history.length > 0 && (
         <div className="p-4 mt-auto border-t border-[var(--border-default)]">
-          <h4 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Version History</h4>
+          <h4 className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Recent Changes</h4>
           <div className="flex flex-col gap-2 relative before:content-[''] before:absolute before:left-1.5 before:top-1 before:bottom-1 before:w-px before:bg-gray-200">
             {history.map((log: HistoryEntry, idx: number) => {
               const date = new Date(log.timestamp);
