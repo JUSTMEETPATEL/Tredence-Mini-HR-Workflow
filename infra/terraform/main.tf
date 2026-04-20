@@ -61,6 +61,18 @@ module "keyvault" {
   tags                = var.common_tags
 }
 
+module "postgres" {
+  source              = "./modules/postgres"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  environment         = var.environment
+  project_name        = var.project_name
+  subnet_id           = module.networking.postgres_subnet_id
+  vnet_id             = module.networking.vnet_id
+  admin_password      = var.db_admin_password
+  tags                = var.common_tags
+}
+
 module "aks" {
   source              = "./modules/aks"
   resource_group_name = azurerm_resource_group.main.name
@@ -73,12 +85,4 @@ module "aks" {
   tags                = var.common_tags
 }
 
-module "frontdoor" {
-  source              = "./modules/frontdoor"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  environment         = var.environment
-  project_name        = var.project_name
-  aks_fqdn            = module.aks.fqdn
-  tags                = var.common_tags
-}
+

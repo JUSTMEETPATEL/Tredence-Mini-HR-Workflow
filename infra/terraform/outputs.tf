@@ -19,11 +19,6 @@ output "acr_login_server" {
   value       = module.acr.login_server
 }
 
-output "frontdoor_endpoint" {
-  description = "Azure Front Door endpoint hostname"
-  value       = module.frontdoor.endpoint_hostname
-}
-
 output "keyvault_uri" {
   description = "Key Vault URI"
   value       = module.keyvault.vault_uri

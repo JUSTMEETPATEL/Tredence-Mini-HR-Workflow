@@ -38,5 +38,11 @@ variable "aks_node_count" {
 variable "aks_vm_size" {
   description = "VM size for AKS nodes"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2s_v2"
+}
+
+variable "db_admin_password" {
+  description = "Password for PostgreSQL flexible server admin"
+  type        = string
+  sensitive   = true
 }

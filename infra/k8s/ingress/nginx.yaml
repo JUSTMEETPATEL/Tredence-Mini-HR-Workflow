@@ -2,13 +2,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hr-workflow-ingress
-  namespace: ingress
+  namespace: app
   labels:
     project: hr-workflow-designer
   annotations:
     # Nginx Ingress Controller
     kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
     # Rate limiting
     nginx.ingress.kubernetes.io/limit-rps: "30"
@@ -23,10 +23,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - hr-workflow.example.com
+        - tredence.meetpatel.tech
       secretName: hr-workflow-tls
   rules:
-    - host: hr-workflow.example.com
+    - host: tredence.meetpatel.tech
       http:
         paths:
           # API routes → Hono backend
@@ -34,7 +34,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: api.app.svc.cluster.local
+                name: api
                 port:
                   number: 4000
           # Health endpoint
@@ -42,7 +42,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: api.app.svc.cluster.local
+                name: api
                 port:
                   number: 4000
           # Everything else → Next.js
@@ -50,6 +50,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: web.app.svc.cluster.local
+                name: web
                 port:
                   number: 3000

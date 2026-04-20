@@ -3,12 +3,12 @@ resource "azurerm_kubernetes_cluster" "main" {
   location            = var.location
   resource_group_name = var.resource_group_name
   dns_prefix          = "${var.project_name}-${var.environment}"
-  kubernetes_version  = "1.29"
+  oidc_issuer_enabled = true
 
   default_node_pool {
     name                = "system"
     node_count          = 2
-    vm_size             = "Standard_B2s"
+    vm_size             = "Standard_B2s_v2"
     vnet_subnet_id      = var.subnet_id
     os_disk_size_gb     = 30
     max_pods            = 50
