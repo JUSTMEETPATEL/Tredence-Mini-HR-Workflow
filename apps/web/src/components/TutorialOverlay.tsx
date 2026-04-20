@@ -346,7 +346,10 @@ function DemoCursor({ step }: { step: number }) {
         <MousePointer2 className="text-black drop-shadow-md relative z-10 fill-white" size={32} />
         {[1.5, 2.5, 3.5, 7.5].includes(step) && (
           <div className="ghost-box absolute top-6 left-6 opacity-0 transition-opacity duration-150">
-            <div className={`p-2 border-l-4 ${step === 1.5 ? 'border-[var(--color-brand-500)]' : step === 2.5 ? 'border-[var(--node-start)]' : step === 3.5 ? 'border-[var(--node-task)]' : 'border-[var(--node-end)]'} rounded-md shadow-lg bg-white/90 text-xs font-medium text-black`}>
+            <div
+              className={`p-2 border-l-4 ${step === 1.5 ? 'border-[var(--color-brand-500)]' : step === 2.5 ? 'border-[var(--node-start)]' : step === 3.5 ? 'border-[var(--node-task)]' : 'border-[var(--node-end)]'} rounded-md shadow-lg text-xs font-medium`}
+              style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-primary)' }}
+            >
               {step === 1.5 ? 'Two-finger pan' : step === 2.5 ? 'Start Node' : step === 3.5 ? 'Task Node' : 'End Node'}
             </div>
           </div>
